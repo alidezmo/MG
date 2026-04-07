@@ -77,7 +77,7 @@
         .logout-btn { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: bold; font-size: 12px;}
         .logout-btn:hover { background: #ef4444; color: white; }
         
-        /* زر تثبيت التطبيق الجديد */
+        /* زر تثبيت التطبيق في القائمة */
         .install-btn { background: var(--primary-color); color: white; border: none; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; display: none; transition: 0.2s; }
         .install-btn:hover { background: var(--primary-dark); }
 
@@ -108,7 +108,7 @@
             transition: transform 0.2s ease-out; 
             z-index: 1; 
             margin-bottom: 5px; 
-            user-select: text; /* السماح بنسخ النص */
+            user-select: text;
         }
         
         .msg-me { background-color: var(--msg-me-bg); color: var(--msg-me-text); align-self: flex-start; border-top-right-radius: 4px; padding-right: 35px !important; padding-left: 15px !important; }
@@ -133,7 +133,7 @@
         .msg-menu button:hover { background: var(--hover-bg); color: var(--primary-color); }
         .msg-menu .delete-btn:hover { color: #ef4444; background: rgba(239, 68, 68, 0.05); }
 
-        /* 🌟 قائمة التفاعلات (تظهر بالضغط المطول وتتوسط الرسالة) 🌟 */
+        /* قائمة التفاعلات */
         .reaction-menu { display: none; position: absolute; top: -45px; left: 50%; transform: translateX(-50%); background: var(--card-bg); box-shadow: 0 5px 15px rgba(0,0,0,0.2); border-radius: 25px; padding: 5px 10px; z-index: 100; border: 1px solid var(--border-color); gap: 8px; animation: popUp 0.2s ease-out; }
         @keyframes popUp { 0% { opacity: 0; transform: translate(-50%, 10px); } 100% { opacity: 1; transform: translate(-50%, 0); } }
         .reaction-menu.show { display: flex; }
@@ -214,6 +214,15 @@
 
     <audio id="notification-sound" src="https://proxy.notificationsounds.com/message-tones/pristine-609/download/file-sounds-1140-pristine.mp3" preload="auto"></audio>
 
+    <div id="install-popup" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--card-bg); padding: 20px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 9999; width: 90%; max-width: 350px; text-align: center; border: 2px solid var(--primary-color);">
+        <i class="fa-solid fa-mobile-screen-button" style="font-size: 40px; color: var(--primary-color); margin-bottom: 10px;"></i>
+        <h3 style="margin-bottom: 10px; color: var(--text-color);">تثبيت تطبيق MG HOME</h3>
+        <p style="font-size: 14px; color: #6b7280; margin-bottom: 20px;">قم بتثبيت التطبيق على جهازك للوصول السريع، وتجربة شاشة كاملة، وتلقي الإشعارات بشكل أفضل!</p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="popup-install-btn" style="flex: 1; background: var(--primary-color); color: white; border: none; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.3s;">تثبيت الآن</button>
+            <button id="popup-close-btn" style="flex: 1; background: var(--input-bg); color: var(--text-color); border: 1px solid var(--border-color); padding: 12px; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.3s;">ليس الآن</button>
+        </div>
+    </div>
     <div id="lightbox">
         <button class="lightbox-close-btn" onclick="closeLightbox()"><i class="fa-solid fa-xmark"></i></button>
         <div class="lightbox-img-container"><img id="lightbox-img" src="" draggable="false"></div>
@@ -303,25 +312,63 @@
     </div>
 
     <script>
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+        // 1. تسجيل Service Worker
+        if ('serviceWorker' in navigator) { 
+            navigator.serviceWorker.register('./sw.js')
+            .then(() => console.log("تم تشغيل Service Worker بنجاح ✅"))
+            .catch((err) => console.error("فشل تشغيل Service Worker ❌", err));
+        }
         
         let deferredPrompt;
+        const installPopup = document.getElementById('install-popup');
+        const popupInstallBtn = document.getElementById('popup-install-btn');
+        const popupCloseBtn = document.getElementById('popup-close-btn');
+
+        // 2. التقاط حدث التثبيت من المتصفح
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            document.getElementById('install-app-btn').style.display = 'block'; // إظهار زر التثبيت في القائمة
+            
+            // إظهار النافذة المنبثقة
+            installPopup.style.display = 'block';
+            
+            // إظهار الزر في القائمة الجانبية في نفس الوقت
+            const sidebarInstallBtn = document.getElementById('install-app-btn');
+            if(sidebarInstallBtn) sidebarInstallBtn.style.display = 'block';
         });
 
+        // 3. الضغط على "تثبيت الآن" داخل النافذة المنبثقة
+        popupInstallBtn.addEventListener('click', async () => {
+            installPopup.style.display = 'none';
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') { 
+                    console.log('تم قبول التثبيت');
+                    document.getElementById('install-app-btn').style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        // 4. الضغط على "ليس الآن" لإغلاق النافذة
+        popupCloseBtn.addEventListener('click', () => {
+            installPopup.style.display = 'none';
+        });
+
+        // 5. في حال ضغط المستخدم على زر "تثبيت التطبيق" الموجود في القائمة الجانبية بدلاً من النافذة
         document.getElementById('install-app-btn').addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') { document.getElementById('install-app-btn').style.display = 'none'; }
+                if (outcome === 'accepted') { 
+                    document.getElementById('install-app-btn').style.display = 'none';
+                    installPopup.style.display = 'none';
+                }
                 deferredPrompt = null;
             }
         });
     </script>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getDatabase, ref, push, onValue, set, update, remove, onDisconnect, off, query, limitToLast, onChildAdded, onChildRemoved, onChildChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
@@ -497,7 +544,7 @@
             });
         };
 
-        // ================= التفاعلات بالضغط المطول (Long Press) =================
+        // ================= التفاعلات بالضغط المطول =================
         window.toggleMsgMenu = function(key) {
             const menu = document.getElementById('menu-' + key);
             const bubble = document.getElementById('msg-' + key);
@@ -619,7 +666,7 @@
             } hideRecordingUI(); 
         });
 
-        // ================= رسم الرسائل (مع الضغط المطول) =================
+        // ================= رسم الرسائل =================
         function renderMsg(msgKey, msgObj, isMe) {
             const div = document.createElement('div'); div.id = 'msg-' + msgKey; div.className = `msg-bubble ${isMe ? 'msg-me' : 'msg-other'}`;
             let htmlContent = '', textExcerptForReply = ''; 
@@ -639,7 +686,7 @@
                 textExcerptForReply = '🎤 صوت';
             }
 
-            // قائمة الثلاث نقاط الجانبية النظيفة
+            // قائمة الثلاث نقاط
             let actionsHtml = `
                 <div class="msg-options" onclick="toggleMsgMenu('${msgKey}'); event.stopPropagation();"><i class="fa-solid fa-ellipsis-vertical"></i>
                     <div class="msg-menu" id="menu-${msgKey}">
@@ -648,7 +695,7 @@
                     </div>
                 </div>`;
             
-            // قائمة التفاعلات التي تظهر بالضغط المطول فقط
+            // قائمة التفاعلات
             let reactMenuHtml = `
                 <div class="reaction-menu" id="react-${msgKey}">
                     <span class="reaction-emoji" onclick="addReaction('${msgKey}', '👍'); event.stopPropagation();">👍</span>
@@ -681,20 +728,18 @@
             chatMessages.appendChild(div); setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
             if (msgObj.reactions) { updateReactionsUI(msgKey, msgObj.reactions); }
 
-            // 🌟 برمجة الضغط المطول (Long Press) والسحب للرد 🌟
             let touchStartX = 0, touchStartY = 0, pressTimer;
 
             const startPress = (e) => {
                 if(e.touches) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }
                 pressTimer = setTimeout(() => {
                     toggleReactMenu(msgKey);
-                    if (navigator.vibrate) navigator.vibrate(50); // اهتزاز خفيف للموبايل
-                }, 500); // يظهر التفاعل بعد نصف ثانية
+                    if (navigator.vibrate) navigator.vibrate(50);
+                }, 500); 
             };
 
             const cancelPress = () => { clearTimeout(pressTimer); };
 
-            // أحداث اللمس (موبايل)
             div.addEventListener('touchstart', startPress, {passive: true});
             div.addEventListener('touchend', e => {
                 cancelPress();
@@ -705,13 +750,10 @@
             div.addEventListener('touchmove', e => {
                 let diffX = e.touches[0].clientX - touchStartX;
                 let diffY = e.touches[0].clientY - touchStartY;
-                // إذا حرك إصبعه، نلغي الضغط المطول
                 if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) cancelPress();
-                // السحب للرد
                 if ((isMe && diffX < -30) || (!isMe && diffX > 30)) { div.style.transform = `translateX(${diffX}px)`; }
             }, {passive: true});
 
-            // أحداث الماوس (كمبيوتر)
             div.addEventListener('mousedown', startPress);
             div.addEventListener('mouseup', cancelPress);
             div.addEventListener('mouseleave', cancelPress);
