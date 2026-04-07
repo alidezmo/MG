@@ -1,5 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="120" fill="#2563eb"/>
   
-  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="280" font-weight="bold">M</text>
+  <defs>
+    <linearGradient id="bubbleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e2e8f0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <path d="M192 144c-53 0-96 38.6-96 86.3c0 28.5 15.3 53.8 38.9 70.8c-4.3 15.3-17.5 35.6-17.8 36.1c-.8 1.3-.8 2.9-.1 4.2s2 2.1 3.5 2.1c25.4 0 47.9-12.8 60.5-24.8c3.6.4 7.3.6 11 .6c53 0 96-38.6 96-86.3s-43-86.3-96-86.3z" 
+        fill="rgba(255, 255, 255, 0.3)"/>
+
+  <path d="M320 208c-53 0-96 38.6-96 86.3c0 28.5 15.3 53.8 38.9 70.8c-4.3 15.3-17.5 35.6-17.8 36.1c-.8 1.3-.8 2.9-.1 4.2s2 2.1 3.5 2.1c25.4 0 47.9-12.8 60.5-24.8c3.6.4 7.3.6 11 .6c53 0 96-38.6 96-86.3s-43-86.3-96-86.3z" 
+        fill="url(#bubbleGrad)"/>
 </svg>
