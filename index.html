@@ -85,6 +85,13 @@
         .install-btn { background: var(--primary-color); color: white; border: none; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; display: none; transition: 0.2s; }
         .install-btn:hover { background: var(--primary-dark); }
 
+        /* ================= تصميم فقاعة الإشعارات الداخلية ================= */
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast-bubble { background: var(--card-bg); border: 1px solid var(--primary-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 50px; padding: 8px 15px 8px 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; pointer-events: auto; animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); color: var(--text-color); min-width: 250px; max-width: 90vw; }
+        .toast-bubble:hover { transform: scale(1.02); }
+        @keyframes slideDown { 0% { top: -50px; opacity: 0; transform: scale(0.8); } 100% { top: 0; opacity: 1; transform: scale(1); } }
+        @keyframes fadeOutUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-20px); } }
+
         /* منطقة الشات */
         #chat-screen { flex: 1; display: flex; flex-direction: column; position: relative; background: var(--chat-bg); width: 100%; overflow: hidden;}
         .chat-header { background: var(--card-bg); padding: 12px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border-color); z-index: 10; }
@@ -92,13 +99,19 @@
         .header-title { font-size: 16px; font-weight: bold; color: var(--text-color); }
         .typing-indicator { color: var(--primary-color); font-weight: bold; font-size: 12px; animation: pulseTyping 1.5s infinite; }
         @keyframes pulseTyping { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        
+        #clear-chat-btn { background: none; border: none; color: #ef4444; font-size: 18px; cursor: pointer; padding: 8px; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center; opacity: 0.7;}
+        #clear-chat-btn:hover { background: rgba(239, 68, 68, 0.1); opacity: 1; transform: scale(1.1);}
 
         .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; z-index: 1; background-image: radial-gradient(var(--border-color) 1px, transparent 1px); background-size: 20px 20px; }
         .chat-messages::-webkit-scrollbar { width: 6px; }
         .chat-messages::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 10px; }
         
         .msg-bubble { 
-            position: relative; max-width: 75%; padding: 10px 15px; border-radius: 18px; font-size: 15px; line-height: 1.5; word-wrap: break-word; animation: fadeIn 0.3s ease; width: fit-content; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: transform 0.2s ease-out; z-index: 1; margin-bottom: 5px; user-select: text; 
+            position: relative; max-width: 75%; padding: 10px 15px; border-radius: 18px; font-size: 15px; line-height: 1.5; word-wrap: break-word; animation: fadeIn 0.3s ease; width: fit-content; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: transform 0.2s ease-out; z-index: 1; margin-bottom: 5px; 
+            /* منع التحديد الخاطئ للنص لتسهيل الضغط المطول */
+            user-select: none; 
+            -webkit-user-select: none;
         }
         
         .msg-me { background-color: var(--msg-me-bg); color: var(--msg-me-text); align-self: flex-start; border-top-right-radius: 4px; padding-right: 35px !important; padding-left: 15px !important; }
@@ -107,6 +120,18 @@
         .sender-name { font-size: 12px; font-weight: 800; color: var(--primary-color); margin-bottom: 5px; display: block; }
         .msg-me .sender-name { color: #dbeafe; }
         .dark-theme .msg-other .sender-name { color: #60a5fa; }
+
+        /* ================= تنسيق الروابط ويوتيوب ================= */
+        .msg-bubble a { color: var(--primary-color); text-decoration: underline; font-weight: bold;}
+        .msg-me a { color: #dbeafe; }
+        .dark-theme .msg-other a { color: #60a5fa; }
+        
+        .yt-preview { margin-top: 10px; border-radius: 12px; overflow: hidden; position: relative; max-width: 320px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.1);}
+        .yt-preview a { display: block; position: relative; }
+        .yt-preview img { width: 100%; display: block; transition: 0.3s; }
+        .yt-play-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 40px; color: #ff0000; background: rgba(255,255,255,0.9); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.2s;}
+        .yt-preview a:hover img { transform: scale(1.05); }
+        .yt-preview a:hover .yt-play-icon { transform: translate(-50%, -50%) scale(1.1); background: white; }
 
         .msg-options { position: absolute; top: 8px; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; transition: 0.2s; z-index: 10; opacity: 0.3; }
         .msg-me .msg-options { right: 5px; left: auto; color: white; }
@@ -216,6 +241,8 @@
         <button id="start-btn" class="login-btn">دخول للدردشة</button>
     </div>
 
+    <div id="toast-container"></div>
+
     <div id="app-container">
         <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
@@ -258,6 +285,7 @@
                     <div class="header-title" id="chat-title">المجموعة العامة</div>
                     <div style="font-size: 12px; color: var(--primary-color); font-weight:bold;" id="chat-subtitle">مشفر بالكامل</div>
                 </div>
+                <button id="clear-chat-btn" title="مسح المحادثة بالكامل"><i class="fa-solid fa-trash-can"></i></button>
             </div>
 
             <div class="chat-messages" id="chat-messages"></div>
@@ -287,7 +315,8 @@
     </div>
 
     <script>
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+        // إعداد Service Worker
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(()=>{}); }
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault(); deferredPrompt = e;
@@ -374,7 +403,6 @@
         function generateUserIdFromName(name) { return 'user_' + name.trim().replace(/\s+/g, '_').toLowerCase(); }
 
         const savedCode = localStorage.getItem('chat_passcode');
-        // حل مشكلة تأخير التحديث ليعمل الدخول التلقائي بشكل سليم
         setTimeout(() => {
             if (myName && savedCode === SECRET_ROOM_CODE && myUserId) { startApp(); }
         }, 0);
@@ -391,26 +419,64 @@
         const appStartTime = Date.now(); let unreadCounts = { global: 0 }; let trackedRooms = new Set(); 
         function playNotificationSound() { document.getElementById('notification-sound').play().catch(()=>{}); }
 
+        // دالة عرض إشعار النظام المدمج (In-App Toast)
+        function showInAppToast(name, text, roomType, targetId) {
+            const container = document.getElementById('toast-container');
+            if(!container) return;
+            const toast = document.createElement('div'); toast.className = 'toast-bubble';
+            const firstChar = name.charAt(0).toUpperCase();
+            const avatarBg = roomType === 'global' ? 'var(--primary-color)' : '#10b981';
+            
+            toast.innerHTML = `
+                <div class="private-avatar" style="width:38px; height:38px; font-size:16px; background:${avatarBg}; flex-shrink:0;">${firstChar}</div>
+                <div style="flex:1; overflow:hidden;">
+                    <strong style="display:block; font-size:13px; color:var(--primary-color);">${roomType === 'global' ? 'المجموعة العامة - ' + name : name}</strong>
+                    <span style="font-size:12px; opacity:0.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">${text}</span>
+                </div>
+            `;
+            
+            toast.onclick = () => {
+                if (targetId !== 'system') {
+                    const chatTitle = roomType === 'global' ? 'المجموعة العامة' : name;
+                    switchChat(roomType, chatTitle, targetId);
+                }
+                toast.style.animation = 'fadeOutUp 0.3s forwards';
+                setTimeout(() => toast.remove(), 300);
+            };
+            container.appendChild(toast);
+            setTimeout(() => { if(toast.parentElement) { toast.style.animation = 'fadeOutUp 0.3s forwards'; setTimeout(() => toast.remove(), 300); } }, 4000);
+        }
+
+        // دالة نسخ نص الرسالة الجديدة
+        window.copyMsgText = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showInAppToast('النظام', 'تم نسخ النص بنجاح ✔️', 'global', 'system');
+            }).catch(err => console.error('فشل النسخ:', err));
+        };
+
         function handleIncomingNotification(msg, roomType, targetId) {
             if (msg.timestamp < appStartTime || msg.name === myName) return; 
 
-            if (document.hidden || !(currentChatMode === roomType && currentChatTargetId === targetId)) {
+            if (!(currentChatMode === roomType && currentChatTargetId === targetId)) {
                 const badgeId = roomType === 'global' ? 'global' : targetId;
                 unreadCounts[badgeId] = (unreadCounts[badgeId] || 0) + 1;
                 const badgeEl = document.getElementById('badge-' + badgeId);
                 if (badgeEl) { badgeEl.innerText = unreadCounts[badgeId]; badgeEl.style.display = 'flex'; }
                 
                 playNotificationSound();
+                let notifBody = msg.type === 'text' ? msg.content : (msg.type === 'audio' ? '🎤 أرسل رسالة صوتية' : '📁 أرسل ملفاً/صورة');
 
-                if (Notification.permission === "granted") {
+                if ('setAppBadge' in navigator) {
+                    let totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
+                    navigator.setAppBadge(totalUnread).catch(()=>{});
+                }
+
+                if (document.hidden && Notification.permission === "granted") {
                     let notifTitle = roomType === 'global' ? `المجموعة العامة - ${msg.name}` : `رسالة من ${msg.name}`;
-                    let notifBody = 'رسالة جديدة';
-                    if (msg.type === 'text') notifBody = msg.content;
-                    else if (msg.type === 'audio') notifBody = '🎤 أرسل رسالة صوتية';
-                    else if (msg.type === 'file') notifBody = '📁 أرسل ملفاً/صورة';
-
-                    const notification = new Notification(notifTitle, { body: notifBody, icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png' });
+                    const notification = new Notification(notifTitle, { body: notifBody, icon: './icon.svg' });
                     notification.onclick = function() { window.focus(); this.close(); };
+                } else if (!document.hidden) {
+                    showInAppToast(msg.name, notifBody, roomType, targetId);
                 }
             }
         }
@@ -493,7 +559,7 @@
             });
         }
 
-        // ================= التبديل والمراقبة =================
+        // ================= التبديل والمراقبة ومسح المحادثة =================
         window.switchChat = function(mode, title, targetId = null) {
             currentChatMode = mode; currentChatTargetId = targetId; window.cancelReply();
             
@@ -548,11 +614,21 @@
             });
         };
 
+        // مسح المحادثة بالكامل
+        document.getElementById('clear-chat-btn').addEventListener('click', () => {
+            if (!currentMessagesRefPath) return;
+            const confirmMsg = currentChatMode === 'global' 
+                ? "هل أنت متأكد أنك تريد مسح جميع رسائل 'المجموعة العامة' للجميع؟" 
+                : `هل أنت متأكد من مسح المحادثة مع ${document.getElementById('chat-title').innerText}؟`;
+
+            if (confirm(confirmMsg)) {
+                remove(ref(db, currentMessagesRefPath)).then(() => alert("تم مسح المحادثة بنجاح!")).catch((error) => { console.error(error); alert("حدث خطأ أثناء المسح."); });
+            }
+        });
+
         window.addEventListener('focus', () => {
             if (window.pendingUnreadMessages && window.pendingUnreadMessages.length > 0) {
-                window.pendingUnreadMessages.forEach(fullPath => {
-                    update(ref(db, fullPath), { [`readBy/${myUserId}`]: true });
-                });
+                window.pendingUnreadMessages.forEach(fullPath => { update(ref(db, fullPath), { [`readBy/${myUserId}`]: true }); });
                 window.pendingUnreadMessages = []; 
                 if (currentChatMode === 'private' && currentChatTargetId) {
                     unreadCounts[currentChatTargetId] = 0;
@@ -560,9 +636,10 @@
                     if (badgeEl) badgeEl.style.display = 'none';
                 }
             }
+            if ('clearAppBadge' in navigator) { navigator.clearAppBadge().catch(()=>{}); }
         });
 
-        // ================= التفاعلات والرسائل =================
+        // ================= التفاعلات والرسائل والروابط =================
         window.toggleMsgMenu = function(key) {
             const menu = document.getElementById('menu-' + key);
             const bubble = document.getElementById('msg-' + key);
@@ -638,7 +715,7 @@
         document.getElementById('send-btn').addEventListener('click', sendText);
         msgInput.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } });
 
-        // ================= المرفقات والصوتيات (واستقبال ملفات المشاركة) =================
+        // ================= المرفقات والصوتيات =================
         const fileInput = document.getElementById('file-input');
         document.getElementById('attach-btn').addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', () => {
@@ -648,19 +725,13 @@
             reader.readAsDataURL(file); fileInput.value = '';
         });
 
-        // استقبال الملفات من قائمة المشاركة الخاصة بالهاتف (Web Share Target API)
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data.type === 'FILE_SHARED_FROM_OS' && event.data.file) {
                 const file = event.data.file;
-                
-                if (file.size > 3 * 1024 * 1024) return alert("عذراً، الحد الأقصى للملفات المشتركة 3 ميجابايت.");
+                if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى للملفات المشتركة 3 ميجابايت.");
                 if (!currentMessagesRefPath) return alert("الرجاء فتح محادثة أولاً لمشاركة الملف!");
-
                 const reader = new FileReader(); 
-                reader.onload = e => {
-                    sendMessage({ type: 'file', fileName: file.name, content: e.target.result });
-                    alert(`تم إرسال الملف (${file.name}) بنجاح!`);
-                };
+                reader.onload = e => { sendMessage({ type: 'file', fileName: file.name, content: e.target.result }); alert(`تم إرسال الملف (${file.name}) بنجاح!`); };
                 reader.readAsDataURL(file);
             }
         });
@@ -701,6 +772,37 @@
             } hideRecordingUI(); 
         });
 
+        // ================= دالة معالجة النصوص (الروابط واليوتيوب) =================
+        function processTextForLinks(text) {
+            let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
+            
+            let ytVideoId = null;
+            const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+            const ytMatch = safeText.match(ytRegex);
+            if (ytMatch && ytMatch[1]) { ytVideoId = ytMatch[1]; }
+
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            let formattedText = safeText.replace(urlRegex, function(url) {
+                return `<a href="${url}" target="_blank">${url}</a>`;
+            });
+
+            formattedText = formattedText.replace(/\n/g, '<br>');
+
+            if (ytVideoId) {
+                const ytPreviewHtml = `
+                    <div class="yt-preview">
+                        <a href="https://www.youtube.com/watch?v=${ytVideoId}" target="_blank" title="تشغيل الفيديو">
+                            <img src="https://img.youtube.com/vi/${ytVideoId}/hqdefault.jpg" alt="YouTube Preview">
+                            <div class="yt-play-icon"><i class="fa-brands fa-youtube"></i></div>
+                        </a>
+                    </div>
+                `;
+                formattedText += ytPreviewHtml;
+            }
+
+            return formattedText;
+        }
+
         // ================= رسم الرسائل =================
         function renderMsg(msgKey, msgObj, isMe) {
             const div = document.createElement('div'); div.id = 'msg-' + msgKey; div.className = `msg-bubble ${isMe ? 'msg-me' : 'msg-other'}`;
@@ -711,7 +813,14 @@
                 quoteHtml = `<div class="quoted-msg" onclick="prepareReply('${msgObj.name}', '${msgObj.content ? 'نص' : 'مرفق'}')"><strong>${msgObj.replyTo.name}</strong><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${msgObj.replyTo.text}</div></div>`;
             }
 
-            if (msgObj.type === 'text') { htmlContent = msgObj.content.replace(/\n/g, '<br>'); textExcerptForReply = msgObj.content; } 
+            let safeContentToCopy = '';
+
+            if (msgObj.type === 'text') { 
+                htmlContent = processTextForLinks(msgObj.content); 
+                textExcerptForReply = msgObj.content; 
+                // تجهيز النص للنسخ بأمان
+                safeContentToCopy = msgObj.content.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n');
+            } 
             else if (msgObj.type === 'file') {
                 if (msgObj.content.startsWith('data:image/')) { htmlContent = `<img src="${msgObj.content}" class="image-preview" onclick="openLightbox(this.src)">`; textExcerptForReply = '📷 صورة'; } 
                 else { htmlContent = `<a href="${msgObj.content}" download="${msgObj.fileName}" class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName}</div></a>`; textExcerptForReply = '📁 ملف'; }
@@ -725,6 +834,7 @@
                 <div class="msg-options" onclick="toggleMsgMenu('${msgKey}'); event.stopPropagation();"><i class="fa-solid fa-ellipsis-vertical"></i>
                     <div class="msg-menu" id="menu-${msgKey}">
                         <button onclick="prepareReply('${msgObj.name}', '${textExcerptForReply}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-reply"></i> رد</button>
+                        ${msgObj.type === 'text' ? `<button onclick="copyMsgText('${safeContentToCopy}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-copy"></i> نسخ</button>` : ''}
                         ${isMe ? `<button class="delete-btn" onclick="deleteMsg('${msgKey}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-trash"></i> حذف للجميع</button>` : ''}
                     </div>
                 </div>`;
@@ -763,6 +873,8 @@
 
             let touchStartX = 0, touchStartY = 0, pressTimer;
             const startPress = (e) => {
+                if(e.target.closest('a') || e.target.closest('.yt-preview')) return; 
+
                 if(e.touches) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }
                 pressTimer = setTimeout(() => {
                     toggleReactMenu(msgKey);
