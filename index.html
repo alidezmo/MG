@@ -373,8 +373,8 @@
 
         function generateUserIdFromName(name) { return 'user_' + name.trim().replace(/\s+/g, '_').toLowerCase(); }
 
-                const savedCode = localStorage.getItem('chat_passcode');
-        // تأخير التشغيل التلقائي جزء من الثانية حتى يكتمل تحميل كافة الدوال بالأسفل
+        const savedCode = localStorage.getItem('chat_passcode');
+        // حل مشكلة تأخير التحديث ليعمل الدخول التلقائي بشكل سليم
         setTimeout(() => {
             if (myName && savedCode === SECRET_ROOM_CODE && myUserId) { startApp(); }
         }, 0);
@@ -520,7 +520,6 @@
                 const msg = snapshot.val(); 
                 renderMsg(snapshot.key, msg, msg.name === myName);
                 
-                // تحديث حالة القراءة بذكاء
                 if (msg.name !== myName && currentChatMode === 'private' && (!msg.readBy || !msg.readBy[myUserId])) {
                     if (!document.hidden) {
                         update(ref(db, `${currentMessagesRefPath}/${snapshot.key}`), { [`readBy/${myUserId}`]: true });
@@ -549,7 +548,6 @@
             });
         };
 
-        // مراقبة عودة المستخدم للصفحة لتعليم الرسائل المعلقة كمقروءة
         window.addEventListener('focus', () => {
             if (window.pendingUnreadMessages && window.pendingUnreadMessages.length > 0) {
                 window.pendingUnreadMessages.forEach(fullPath => {
@@ -640,7 +638,7 @@
         document.getElementById('send-btn').addEventListener('click', sendText);
         msgInput.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } });
 
-        // ================= المرفقات والصوتيات =================
+        // ================= المرفقات والصوتيات (واستقبال ملفات المشاركة) =================
         const fileInput = document.getElementById('file-input');
         document.getElementById('attach-btn').addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', () => {
@@ -648,6 +646,23 @@
             if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى 3 ميجابايت.");
             const reader = new FileReader(); reader.onload = e => sendMessage({ type: 'file', fileName: file.name, content: e.target.result });
             reader.readAsDataURL(file); fileInput.value = '';
+        });
+
+        // استقبال الملفات من قائمة المشاركة الخاصة بالهاتف (Web Share Target API)
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data.type === 'FILE_SHARED_FROM_OS' && event.data.file) {
+                const file = event.data.file;
+                
+                if (file.size > 3 * 1024 * 1024) return alert("عذراً، الحد الأقصى للملفات المشتركة 3 ميجابايت.");
+                if (!currentMessagesRefPath) return alert("الرجاء فتح محادثة أولاً لمشاركة الملف!");
+
+                const reader = new FileReader(); 
+                reader.onload = e => {
+                    sendMessage({ type: 'file', fileName: file.name, content: e.target.result });
+                    alert(`تم إرسال الملف (${file.name}) بنجاح!`);
+                };
+                reader.readAsDataURL(file);
+            }
         });
 
         window.toggleAudio = function(id) {
@@ -728,7 +743,6 @@
             if (isMe && currentChatMode === 'private') {
                 const isRead = msgObj.readBy ? true : false;
                 const iconClass = isRead ? "fa-solid fa-check-double status-read" : "fa-solid fa-check-double";
-                // تأثير التحول الناعم للون الأزرق
                 readStatusHtml = `<i id="status-${msgKey}" class="${iconClass}" style="transition: color 0.4s ease, text-shadow 0.4s ease; margin-right: 3px;"></i>`;
             }
 
@@ -747,7 +761,6 @@
             chatMessages.appendChild(div); setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
             if (msgObj.reactions) { updateReactionsUI(msgKey, msgObj.reactions); }
 
-            // أحداث الضغط المطول
             let touchStartX = 0, touchStartY = 0, pressTimer;
             const startPress = (e) => {
                 if(e.touches) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }
