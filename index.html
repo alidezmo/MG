@@ -63,7 +63,7 @@
         .theme-toggle-btn:hover { background: var(--border-color); transform: rotate(15deg); }
         
         #sidebar-users { flex: 1; overflow-y: auto; padding: 10px; }
-        .sidebar-section-title { font-size: 13px; color: var(--primary-color); font-weight: 800; margin: 15px 10px 5px; }
+        .sidebar-section-title { font-size: 13px; color: var(--primary-color); font-weight: 800; margin: 15px 10px 5px; display: flex; justify-content: space-between; align-items: center;}
 
         .user-item { display: flex; align-items: center; gap: 15px; padding: 12px 15px; border-radius: 16px; cursor: pointer; transition: 0.2s; background: transparent; margin-bottom: 5px; border: 1px solid transparent;}
         .user-item:hover { background: var(--hover-bg); border-color: var(--border-color); }
@@ -72,7 +72,6 @@
 
         .private-avatar { width: 45px; height: 45px; border-radius: 12px; background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; font-size: 18px; }
 
-        /* تنسيقات حالة الاتصال */
         .status-online { color: #10b981; font-size: 12px; font-weight: 600; }
         .status-offline { color: #9ca3af; font-size: 12px; font-weight: 600; }
         .avatar-offline { filter: grayscale(100%); opacity: 0.6; }
@@ -84,6 +83,10 @@
         
         .install-btn { background: var(--primary-color); color: white; border: none; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; display: none; transition: 0.2s; }
         .install-btn:hover { background: var(--primary-dark); }
+        
+        /* زر الأدمين الخاص */
+        #admin-panel-btn { background: #10b981; color: white; border: none; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; display: none; }
+        #admin-panel-btn:hover { background: #059669; }
 
         /* ================= تصميم فقاعة الإشعارات الداخلية ================= */
         #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
@@ -91,6 +94,20 @@
         .toast-bubble:hover { transform: scale(1.02); }
         @keyframes slideDown { 0% { top: -50px; opacity: 0; transform: scale(0.8); } 100% { top: 0; opacity: 1; transform: scale(1); } }
         @keyframes fadeOutUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-20px); } }
+
+        /* ================= لوحة تحكم الأدمين (النافذة المنبثقة) ================= */
+        #admin-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999999; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .admin-box { background: var(--card-bg); width: 95%; max-width: 500px; border-radius: 20px; padding: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 2px solid #10b981; display: flex; flex-direction: column; max-height: 85vh; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px; }
+        .admin-title { font-size: 18px; font-weight: bold; color: #10b981; }
+        .admin-close-btn { background: none; border: none; font-size: 20px; color: var(--text-color); cursor: pointer; }
+        .admin-input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .admin-input { flex: 1; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--input-bg); color: var(--text-color); outline: none; }
+        .admin-add-btn { background: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .admin-users-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px; }
+        .admin-user-card { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--input-bg); border-radius: 10px; border: 1px solid var(--border-color); }
+        .admin-delete-user-btn { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .admin-delete-user-btn:hover { background: #ef4444; color: white; }
 
         /* منطقة الشات */
         #chat-screen { flex: 1; display: flex; flex-direction: column; position: relative; background: var(--chat-bg); width: 100%; overflow: hidden;}
@@ -109,9 +126,7 @@
         
         .msg-bubble { 
             position: relative; max-width: 75%; padding: 10px 15px; border-radius: 18px; font-size: 15px; line-height: 1.5; word-wrap: break-word; animation: fadeIn 0.3s ease; width: fit-content; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: transform 0.2s ease-out; z-index: 1; margin-bottom: 5px; 
-            /* منع التحديد الخاطئ للنص لتسهيل الضغط المطول */
-            user-select: none; 
-            -webkit-user-select: none;
+            user-select: none; -webkit-user-select: none;
         }
         
         .msg-me { background-color: var(--msg-me-bg); color: var(--msg-me-text); align-self: flex-start; border-top-right-radius: 4px; padding-right: 35px !important; padding-left: 15px !important; }
@@ -121,7 +136,6 @@
         .msg-me .sender-name { color: #dbeafe; }
         .dark-theme .msg-other .sender-name { color: #60a5fa; }
 
-        /* ================= تنسيق الروابط ويوتيوب ================= */
         .msg-bubble a { color: var(--primary-color); text-decoration: underline; font-weight: bold;}
         .msg-me a { color: #dbeafe; }
         .dark-theme .msg-other a { color: #60a5fa; }
@@ -235,13 +249,33 @@
 
     <div id="login-screen">
         <h2 style="color:var(--primary-color); margin-bottom:10px;">أهلاً بك 💬</h2>
-        <p style="color:#6b7280; margin-bottom: 20px;">الرجاء كتابة اسمك للمتابعة</p>
-        <input type="text" id="username-input" class="login-input" placeholder="اسمك الكريم...">
-        <input type="password" id="passcode-input" class="login-input" placeholder="رمز الدخول السري (2026)...">
+        <p style="color:#6b7280; margin-bottom: 20px;">الرجاء كتابة بيانات الدخول</p>
+        <input type="text" id="username-input" class="login-input" placeholder="اسم المستخدم...">
+        <input type="password" id="passcode-input" class="login-input" placeholder="كلمة المرور الخاصة بك...">
         <button id="start-btn" class="login-btn">دخول للدردشة</button>
     </div>
 
     <div id="toast-container"></div>
+
+    <div id="admin-modal">
+        <div class="admin-box">
+            <div class="admin-header">
+                <div class="admin-title"><i class="fa-solid fa-shield-halved"></i> لوحة تحكم الإدارة</div>
+                <button class="admin-close-btn" onclick="closeAdminPanel()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div style="font-size: 13px; font-weight: bold; margin-bottom: 5px;">إضافة مستخدم جديد:</div>
+            <div class="admin-input-group">
+                <input type="text" id="admin-new-name" class="admin-input" placeholder="اسم المستخدم">
+                <input type="text" id="admin-new-pass" class="admin-input" placeholder="كلمة المرور">
+                <button class="admin-add-btn" onclick="adminAddUser()">إضافة</button>
+            </div>
+
+            <div style="font-size: 13px; font-weight: bold; margin-top: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">المستخدمين المسجلين:</div>
+            <div class="admin-users-list" id="admin-users-list">
+                </div>
+        </div>
+    </div>
 
     <div id="app-container">
         <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
@@ -269,6 +303,7 @@
             </div>
 
             <div class="sidebar-footer">
+                <button id="admin-panel-btn" onclick="openAdminPanel()"><i class="fa-solid fa-shield"></i> لوحة الإدارة</button>
                 <button id="install-app-btn" class="install-btn"><i class="fa-solid fa-download"></i> تثبيت التطبيق</button>
                 <div class="my-profile">
                     <span id="my-name-display" style="color:var(--text-color);">الاسم</span>
@@ -315,7 +350,6 @@
     </div>
 
     <script>
-        // إعداد Service Worker
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(()=>{}); }
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -323,18 +357,14 @@
             document.getElementById('install-app-btn').style.display = 'block'; 
         });
         document.getElementById('install-app-btn').addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') { document.getElementById('install-app-btn').style.display = 'none'; }
-                deferredPrompt = null;
-            }
+            if (deferredPrompt) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') { document.getElementById('install-app-btn').style.display = 'none'; } deferredPrompt = null; }
         });
     </script>
 
     <script type="module">
+        // تمت إضافة وظيفة get هنا لقراءة قاعدة البيانات لمرة واحدة للمصادقة
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getDatabase, ref, push, onValue, set, update, remove, onDisconnect, off, query, limitToLast, onChildAdded, onChildRemoved, onChildChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+        import { getDatabase, ref, push, onValue, set, update, remove, onDisconnect, off, query, limitToLast, onChildAdded, onChildRemoved, onChildChanged, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyC7-tcbiTsWceNDICdiFOYw5xX8060-lEk",
@@ -347,9 +377,8 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const SECRET_ROOM_CODE = "2026"; 
 
-        // ================= الوضع الليلي وإغلاق القوائم =================
+        // ================= الوضع الليلي وعارض الصور =================
         const themeBtn = document.getElementById('theme-btn');
         let isDarkMode = localStorage.getItem('chat_theme') === 'dark';
         function applyTheme() {
@@ -367,7 +396,6 @@
             }
         });
 
-        // ================= عارض الصور =================
         let currentImageScale = 1; let isDragging = false, startX, startY, transX = 0, transY = 0;
         const lightbox = document.getElementById('lightbox'), lightboxImg = document.getElementById('lightbox-img');
         window.openLightbox = function(src) { lightbox.style.display = 'flex'; lightboxImg.src = src; window.resetZoom(); }
@@ -382,9 +410,11 @@
         window.addEventListener('touchend', () => { isDragging = false; });
         window.addEventListener('touchmove', e => { if(!isDragging || e.touches.length !== 1) return; e.preventDefault(); transX = e.touches[0].clientX - startX; transY = e.touches[0].clientY - startY; applyTransform(); }, {passive: false});
 
-        // ================= التهيئة وتسجيل الدخول =================
+        // ================= التهيئة ونظام تسجيل الدخول (Admin System) =================
         let myName = localStorage.getItem('chat_username') || ''; 
         let myUserId = localStorage.getItem('chat_userid') || '';
+        let myRole = localStorage.getItem('chat_role') || 'user'; // معرفة هل هو أدمين أم مستخدم
+        
         let currentChatMode = 'global', currentChatTargetId = null; 
         let currentMessagesRefPath = ''; 
         let currentListeners = [], typingListener = null, replyingToMsg = null;
@@ -394,32 +424,115 @@
         const chatMessages = document.getElementById('chat-messages'), msgInput = document.getElementById('msg-input');
         const usersListEl = document.getElementById('online-users-list');
 
-        window.toggleSidebar = function() { 
-            document.getElementById('sidebar').classList.toggle('open'); 
-            document.getElementById('sidebar-overlay').classList.toggle('active');
-        }
-        window.logoutApp = function() { localStorage.removeItem('chat_username'); localStorage.removeItem('chat_passcode'); localStorage.removeItem('chat_userid'); location.reload(); }
-
+        window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebar-overlay').classList.toggle('active'); }
+        window.logoutApp = function() { localStorage.clear(); location.reload(); }
         function generateUserIdFromName(name) { return 'user_' + name.trim().replace(/\s+/g, '_').toLowerCase(); }
 
-        const savedCode = localStorage.getItem('chat_passcode');
+        // التحقق عند عمل Refresh: هل حسابي ما زال موجوداً أم تم حذفه من قِبل الأدمين؟
+        const savedPass = localStorage.getItem('chat_passcode');
         setTimeout(() => {
-            if (myName && savedCode === SECRET_ROOM_CODE && myUserId) { startApp(); }
+            if (myName && savedPass && myUserId) {
+                // إذا كان الأدمين الرئيسي، يدخل فوراً
+                if (myName === 'المدير' && savedPass === 'admin') return startApp();
+                
+                // التأكد من استمرار صلاحية الحساب
+                get(ref(db, 'allowed_users/' + myUserId)).then(snap => {
+                    if (snap.exists() && snap.val().password === savedPass) { startApp(); } 
+                    else { alert("تم إيقاف حسابك أو مسحه بواسطة الإدارة."); logoutApp(); }
+                }).catch(() => startApp()); // في حال انقطاع النت يدخل كالمعتاد
+            }
         }, 0);
 
         document.getElementById('start-btn').addEventListener('click', () => {
-            const name = document.getElementById('username-input').value.trim(), code = document.getElementById('passcode-input').value.trim();
-            if (!name || code !== SECRET_ROOM_CODE) return alert("البيانات غير صحيحة!");
-            myName = name; myUserId = generateUserIdFromName(name);
-            localStorage.setItem('chat_username', myName); localStorage.setItem('chat_passcode', code); localStorage.setItem('chat_userid', myUserId);
-            if (Notification.permission !== "granted") Notification.requestPermission();
-            document.getElementById('notification-sound').load(); startApp();
+            const name = document.getElementById('username-input').value.trim();
+            const pass = document.getElementById('passcode-input').value.trim();
+            if (!name || !pass) return alert("أدخل اسم المستخدم وكلمة المرور!");
+
+            // الباب السري للأدمين لتهيئة النظام
+            if (name === 'المدير' && pass === 'admin') {
+                const adminId = 'admin_master';
+                set(ref(db, 'allowed_users/' + adminId), { name: 'المدير', password: 'admin', role: 'admin' });
+                localStorage.setItem('chat_username', 'المدير');
+                localStorage.setItem('chat_passcode', 'admin');
+                localStorage.setItem('chat_userid', adminId);
+                localStorage.setItem('chat_role', 'admin');
+                myName = 'المدير'; myUserId = adminId; myRole = 'admin';
+                startApp();
+                return;
+            }
+
+            // التحقق من حساب المستخدم العادي
+            get(ref(db, 'allowed_users')).then(snap => {
+                const users = snap.val() || {};
+                let foundUser = null, foundId = null;
+                for (let key in users) {
+                    if (users[key].name === name && users[key].password === pass) {
+                        foundUser = users[key]; foundId = key; break;
+                    }
+                }
+                if (foundUser) {
+                    localStorage.setItem('chat_username', foundUser.name);
+                    localStorage.setItem('chat_passcode', foundUser.password);
+                    localStorage.setItem('chat_userid', foundId);
+                    localStorage.setItem('chat_role', foundUser.role || 'user');
+                    myName = foundUser.name; myUserId = foundId; myRole = foundUser.role || 'user';
+                    startApp();
+                } else {
+                    alert("بيانات الدخول غير صحيحة، أو لم تقم الإدارة بإضافتك بعد.");
+                }
+            });
         });
+
+        // ================= لوحة تحكم الأدمين (برمجة) =================
+        window.openAdminPanel = function() {
+            document.getElementById('admin-modal').style.display = 'flex';
+            window.loadUsersList();
+        };
+        window.closeAdminPanel = function() { document.getElementById('admin-modal').style.display = 'none'; };
+
+        window.adminAddUser = function() {
+            const newName = document.getElementById('admin-new-name').value.trim();
+            const newPass = document.getElementById('admin-new-pass').value.trim();
+            if(!newName || !newPass) return alert("الرجاء كتابة الاسم وكلمة المرور");
+            
+            const newId = generateUserIdFromName(newName);
+            set(ref(db, 'allowed_users/' + newId), { name: newName, password: newPass, role: 'user' })
+            .then(() => {
+                alert("تم إضافة المستخدم بنجاح!");
+                document.getElementById('admin-new-name').value = '';
+                document.getElementById('admin-new-pass').value = '';
+                window.loadUsersList();
+            });
+        };
+
+        window.adminDeleteUser = function(id, name) {
+            if(confirm(`هل أنت متأكد من حذف المستخدم (${name}) وطرده من التطبيق نهائياً؟`)) {
+                remove(ref(db, 'allowed_users/' + id));
+                remove(ref(db, 'users/' + id)); // إزالته من قائمة المتصلين أيضاً
+                window.loadUsersList();
+            }
+        };
+
+        window.loadUsersList = function() {
+            get(ref(db, 'allowed_users')).then(snap => {
+                const listEl = document.getElementById('admin-users-list');
+                listEl.innerHTML = '';
+                const users = snap.val() || {};
+                for (let id in users) {
+                    if (users[id].role === 'admin') continue; // إخفاء الأدمين من الحذف
+                    listEl.innerHTML += `
+                        <div class="admin-user-card">
+                            <div><strong>${users[id].name}</strong> <small style="opacity:0.6;">(كلمة السر: ${users[id].password})</small></div>
+                            <button class="admin-delete-user-btn" onclick="adminDeleteUser('${id}', '${users[id].name}')">حذف</button>
+                        </div>
+                    `;
+                }
+            });
+        };
 
         const appStartTime = Date.now(); let unreadCounts = { global: 0 }; let trackedRooms = new Set(); 
         function playNotificationSound() { document.getElementById('notification-sound').play().catch(()=>{}); }
 
-        // دالة عرض إشعار النظام المدمج (In-App Toast)
         function showInAppToast(name, text, roomType, targetId) {
             const container = document.getElementById('toast-container');
             if(!container) return;
@@ -434,50 +547,23 @@
                     <span style="font-size:12px; opacity:0.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">${text}</span>
                 </div>
             `;
-            
-            toast.onclick = () => {
-                if (targetId !== 'system') {
-                    const chatTitle = roomType === 'global' ? 'المجموعة العامة' : name;
-                    switchChat(roomType, chatTitle, targetId);
-                }
-                toast.style.animation = 'fadeOutUp 0.3s forwards';
-                setTimeout(() => toast.remove(), 300);
-            };
+            toast.onclick = () => { if (targetId !== 'system') switchChat(roomType, roomType === 'global' ? 'المجموعة العامة' : name, targetId); toast.style.animation = 'fadeOutUp 0.3s forwards'; setTimeout(() => toast.remove(), 300); };
             container.appendChild(toast);
             setTimeout(() => { if(toast.parentElement) { toast.style.animation = 'fadeOutUp 0.3s forwards'; setTimeout(() => toast.remove(), 300); } }, 4000);
         }
 
-        // دالة نسخ نص الرسالة الجديدة
-        window.copyMsgText = function(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                showInAppToast('النظام', 'تم نسخ النص بنجاح ✔️', 'global', 'system');
-            }).catch(err => console.error('فشل النسخ:', err));
-        };
+        window.copyMsgText = function(text) { navigator.clipboard.writeText(text).then(() => { showInAppToast('النظام', 'تم نسخ النص بنجاح ✔️', 'global', 'system'); }).catch(()=>{}); };
 
         function handleIncomingNotification(msg, roomType, targetId) {
             if (msg.timestamp < appStartTime || msg.name === myName) return; 
-
             if (!(currentChatMode === roomType && currentChatTargetId === targetId)) {
-                const badgeId = roomType === 'global' ? 'global' : targetId;
-                unreadCounts[badgeId] = (unreadCounts[badgeId] || 0) + 1;
-                const badgeEl = document.getElementById('badge-' + badgeId);
-                if (badgeEl) { badgeEl.innerText = unreadCounts[badgeId]; badgeEl.style.display = 'flex'; }
-                
+                const badgeId = roomType === 'global' ? 'global' : targetId; unreadCounts[badgeId] = (unreadCounts[badgeId] || 0) + 1;
+                const badgeEl = document.getElementById('badge-' + badgeId); if (badgeEl) { badgeEl.innerText = unreadCounts[badgeId]; badgeEl.style.display = 'flex'; }
                 playNotificationSound();
                 let notifBody = msg.type === 'text' ? msg.content : (msg.type === 'audio' ? '🎤 أرسل رسالة صوتية' : '📁 أرسل ملفاً/صورة');
-
-                if ('setAppBadge' in navigator) {
-                    let totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
-                    navigator.setAppBadge(totalUnread).catch(()=>{});
-                }
-
-                if (document.hidden && Notification.permission === "granted") {
-                    let notifTitle = roomType === 'global' ? `المجموعة العامة - ${msg.name}` : `رسالة من ${msg.name}`;
-                    const notification = new Notification(notifTitle, { body: notifBody, icon: './icon.svg' });
-                    notification.onclick = function() { window.focus(); this.close(); };
-                } else if (!document.hidden) {
-                    showInAppToast(msg.name, notifBody, roomType, targetId);
-                }
+                if ('setAppBadge' in navigator) navigator.setAppBadge(Object.values(unreadCounts).reduce((a, b) => a + b, 0)).catch(()=>{});
+                if (document.hidden && Notification.permission === "granted") { const notification = new Notification(roomType === 'global' ? `المجموعة العامة - ${msg.name}` : `رسالة من ${msg.name}`, { body: notifBody, icon: './icon.svg' }); notification.onclick = function() { window.focus(); this.close(); }; } 
+                else if (!document.hidden) showInAppToast(msg.name, notifBody, roomType, targetId);
             }
         }
 
@@ -490,6 +576,10 @@
             loginScreen.style.display = 'none'; appContainer.style.display = 'flex';
             document.getElementById('my-name-display').innerText = myName;
             document.getElementById('my-avatar').innerText = myName.charAt(0).toUpperCase();
+            
+            // إظهار زر لوحة الإدارة إذا كان المستخدم أدمين
+            if (myRole === 'admin') { document.getElementById('admin-panel-btn').style.display = 'block'; }
+            
             registerInFirebase(); listenForNotifications('messages_global', 'global', 'global');
             switchChat('global', 'المجموعة العامة');
         }
@@ -502,8 +592,7 @@
             if (minutes < 60) return `آخر ظهور منذ ${minutes} دقيقة`;
             const hours = Math.floor(minutes / 60);
             if (hours < 24) return `آخر ظهور منذ ${hours} ساعة`;
-            const days = Math.floor(hours / 24);
-            return `آخر ظهور منذ ${days} يوم`;
+            return `آخر ظهور منذ ${Math.floor(hours / 24)} يوم`;
         }
 
         function registerInFirebase() {
@@ -518,9 +607,7 @@
             });
 
             onValue(ref(db, 'users'), snapshot => {
-                const allUsers = snapshot.val() || {}; 
-                usersListEl.innerHTML = ''; 
-                
+                const allUsers = snapshot.val() || {}; usersListEl.innerHTML = ''; 
                 const usersArray = Object.values(allUsers).filter(u => u.userId !== myUserId);
                 usersArray.sort((a, b) => (b.online === a.online) ? 0 : b.online ? 1 : -1);
 
@@ -533,33 +620,23 @@
                     const statusClass = u.online ? 'status-online' : 'status-offline';
                     const statusText = u.online ? 'متصل الآن' : timeAgo(u.lastSeen); 
                     const avatarClass = u.online ? '' : 'avatar-offline';
-                    const avatarColor = u.online ? '#10b981' : '#6b7280';
-
-                    const div = document.createElement('div'); 
-                    div.className = `user-item ${isActiveChat}`; 
-                    div.id = `chat-btn-${u.userId}`;
                     
+                    const div = document.createElement('div'); div.className = `user-item ${isActiveChat}`; div.id = `chat-btn-${u.userId}`;
                     div.innerHTML = `
-                        <div class="private-avatar ${avatarClass}" style="background:${avatarColor};">${firstChar}</div>
+                        <div class="private-avatar ${avatarClass}" style="background:${u.online ? '#10b981' : '#6b7280'};">${firstChar}</div>
                         <div style="flex:1;">
                             <strong style="display:block; color:var(--text-color); font-size:15px;">${u.name}</strong>
                             <small class="${statusClass}">${statusText}</small>
                         </div>
                         <div class="unread-badge" id="badge-${u.userId}">0</div>
                     `;
-                    
                     div.onclick = () => { switchChat('private', u.name, u.userId); if(window.innerWidth <= 768) toggleSidebar(); };
                     usersListEl.appendChild(div);
-                    
-                    if(unreadCounts[u.userId] > 0) { 
-                        document.getElementById('badge-' + u.userId).innerText = unreadCounts[u.userId]; 
-                        document.getElementById('badge-' + u.userId).style.display = 'flex'; 
-                    }
+                    if(unreadCounts[u.userId] > 0) { document.getElementById('badge-' + u.userId).innerText = unreadCounts[u.userId]; document.getElementById('badge-' + u.userId).style.display = 'flex'; }
                 });
             });
         }
 
-        // ================= التبديل والمراقبة ومسح المحادثة =================
         window.switchChat = function(mode, title, targetId = null) {
             currentChatMode = mode; currentChatTargetId = targetId; window.cancelReply();
             
@@ -583,21 +660,15 @@
             const refQuery = query(ref(db, currentMessagesRefPath), limitToLast(100));
 
             currentListeners.push(onChildAdded(refQuery, (snapshot) => {
-                const msg = snapshot.val(); 
-                renderMsg(snapshot.key, msg, msg.name === myName);
-                
+                const msg = snapshot.val(); renderMsg(snapshot.key, msg, msg.name === myName);
                 if (msg.name !== myName && currentChatMode === 'private' && (!msg.readBy || !msg.readBy[myUserId])) {
-                    if (!document.hidden) {
-                        update(ref(db, `${currentMessagesRefPath}/${snapshot.key}`), { [`readBy/${myUserId}`]: true });
-                    } else {
-                        window.pendingUnreadMessages.push(`${currentMessagesRefPath}/${snapshot.key}`);
-                    }
+                    if (!document.hidden) update(ref(db, `${currentMessagesRefPath}/${snapshot.key}`), { [`readBy/${myUserId}`]: true });
+                    else window.pendingUnreadMessages.push(`${currentMessagesRefPath}/${snapshot.key}`);
                 }
             }));
             
             currentListeners.push(onChildChanged(refQuery, (snapshot) => {
-                const msg = snapshot.val(); 
-                const statusIcon = document.getElementById('status-' + snapshot.key);
+                const msg = snapshot.val(); const statusIcon = document.getElementById('status-' + snapshot.key);
                 if (statusIcon && msg.readBy) statusIcon.className = "fa-solid fa-check-double status-read";
                 updateReactionsUI(snapshot.key, msg.reactions);
             }));
@@ -614,15 +685,14 @@
             });
         };
 
-        // مسح المحادثة بالكامل
+        // مسح المحادثة بالكامل (متاحة للأدمين، ولأصحاب الرسائل الخاصة)
         document.getElementById('clear-chat-btn').addEventListener('click', () => {
             if (!currentMessagesRefPath) return;
-            const confirmMsg = currentChatMode === 'global' 
-                ? "هل أنت متأكد أنك تريد مسح جميع رسائل 'المجموعة العامة' للجميع؟" 
-                : `هل أنت متأكد من مسح المحادثة مع ${document.getElementById('chat-title').innerText}؟`;
-
-            if (confirm(confirmMsg)) {
-                remove(ref(db, currentMessagesRefPath)).then(() => alert("تم مسح المحادثة بنجاح!")).catch((error) => { console.error(error); alert("حدث خطأ أثناء المسح."); });
+            // الأدمين فقط يستطيع مسح المجموعة العامة، لكن يمكن للجميع مسح محادثاتهم الخاصة
+            if (currentChatMode === 'global' && myRole !== 'admin') return alert("عذراً، الإدارة فقط يمكنها مسح المجموعة العامة بالكامل.");
+            
+            if (confirm("هل أنت متأكد من مسح المحادثة بالكامل للجميع؟")) {
+                remove(ref(db, currentMessagesRefPath)).then(() => alert("تم مسح المحادثة بنجاح!")).catch(() => alert("حدث خطأ أثناء المسح."));
             }
         });
 
@@ -631,120 +701,76 @@
                 window.pendingUnreadMessages.forEach(fullPath => { update(ref(db, fullPath), { [`readBy/${myUserId}`]: true }); });
                 window.pendingUnreadMessages = []; 
                 if (currentChatMode === 'private' && currentChatTargetId) {
-                    unreadCounts[currentChatTargetId] = 0;
-                    const badgeEl = document.getElementById('badge-' + currentChatTargetId);
-                    if (badgeEl) badgeEl.style.display = 'none';
+                    unreadCounts[currentChatTargetId] = 0; const badgeEl = document.getElementById('badge-' + currentChatTargetId); if (badgeEl) badgeEl.style.display = 'none';
                 }
             }
-            if ('clearAppBadge' in navigator) { navigator.clearAppBadge().catch(()=>{}); }
+            if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(()=>{});
         });
 
-        // ================= التفاعلات والرسائل والروابط =================
         window.toggleMsgMenu = function(key) {
-            const menu = document.getElementById('menu-' + key);
-            const bubble = document.getElementById('msg-' + key);
+            const menu = document.getElementById('menu-' + key); const bubble = document.getElementById('msg-' + key);
             const isShowing = menu.classList.contains('show');
-            document.querySelectorAll('.msg-menu.show').forEach(m => m.classList.remove('show'));
-            document.querySelectorAll('.reaction-menu.show').forEach(m => m.classList.remove('show'));
-            document.querySelectorAll('.msg-bubble').forEach(b => b.style.zIndex = '1');
+            document.querySelectorAll('.msg-menu.show').forEach(m => m.classList.remove('show')); document.querySelectorAll('.reaction-menu.show').forEach(m => m.classList.remove('show')); document.querySelectorAll('.msg-bubble').forEach(b => b.style.zIndex = '1');
             if (!isShowing) { menu.classList.add('show'); if(bubble) bubble.style.zIndex = '100'; }
         };
 
         window.toggleReactMenu = function(key) {
-            const menu = document.getElementById('react-' + key);
-            const bubble = document.getElementById('msg-' + key);
+            const menu = document.getElementById('react-' + key); const bubble = document.getElementById('msg-' + key);
             const isShowing = menu.classList.contains('show');
-            document.querySelectorAll('.msg-menu.show').forEach(m => m.classList.remove('show'));
-            document.querySelectorAll('.reaction-menu.show').forEach(m => m.classList.remove('show'));
-            document.querySelectorAll('.msg-bubble').forEach(b => b.style.zIndex = '1');
+            document.querySelectorAll('.msg-menu.show').forEach(m => m.classList.remove('show')); document.querySelectorAll('.reaction-menu.show').forEach(m => m.classList.remove('show')); document.querySelectorAll('.msg-bubble').forEach(b => b.style.zIndex = '1');
             if (!isShowing) { menu.classList.add('show'); if(bubble) bubble.style.zIndex = '100'; }
         }
 
-        window.addReaction = function(msgKey, emoji) {
-            update(ref(db, `${currentMessagesRefPath}/${msgKey}/reactions`), { [myUserId]: emoji });
-            document.querySelectorAll('.reaction-menu.show').forEach(m => m.classList.remove('show'));
-        };
+        window.addReaction = function(msgKey, emoji) { update(ref(db, `${currentMessagesRefPath}/${msgKey}/reactions`), { [myUserId]: emoji }); document.querySelectorAll('.reaction-menu.show').forEach(m => m.classList.remove('show')); };
 
         function updateReactionsUI(msgKey, reactionsObj) {
-            const displayEl = document.getElementById('reactions-display-' + msgKey);
-            if (!displayEl) return;
+            const displayEl = document.getElementById('reactions-display-' + msgKey); if (!displayEl) return;
             if (!reactionsObj) { displayEl.classList.add('hidden'); return; }
-            const emojiCounts = {};
-            Object.values(reactionsObj).forEach(emoji => { emojiCounts[emoji] = (emojiCounts[emoji] || 0) + 1; });
+            const emojiCounts = {}; Object.values(reactionsObj).forEach(emoji => { emojiCounts[emoji] = (emojiCounts[emoji] || 0) + 1; });
             let html = ''; Object.keys(emojiCounts).forEach(emoji => { html += `<span>${emoji}</span>`; });
-            const total = Object.keys(reactionsObj).length;
-            if (total > 1) html += `<span style="font-size:10px; margin-right:3px; opacity:0.8;">${total}</span>`;
+            if (Object.keys(reactionsObj).length > 1) html += `<span style="font-size:10px; margin-right:3px; opacity:0.8;">${Object.keys(reactionsObj).length}</span>`;
             displayEl.innerHTML = html; displayEl.classList.remove('hidden');
         }
 
         window.deleteMsg = function(msgKey) { if(confirm("حذف الرسالة لدى الجميع؟")) remove(ref(db, `${currentMessagesRefPath}/${msgKey}`)); };
-
-        window.prepareReply = function(name, textExcerpt) {
-            replyingToMsg = { name: name, text: textExcerpt };
-            document.getElementById('reply-preview-box').style.display = 'block';
-            document.getElementById('reply-preview-name').innerText = name;
-            document.getElementById('reply-preview-text').innerText = textExcerpt;
-            msgInput.focus();
-        };
+        window.prepareReply = function(name, textExcerpt) { replyingToMsg = { name: name, text: textExcerpt }; document.getElementById('reply-preview-box').style.display = 'block'; document.getElementById('reply-preview-name').innerText = name; document.getElementById('reply-preview-text').innerText = textExcerpt; msgInput.focus(); };
         window.cancelReply = function() { replyingToMsg = null; document.getElementById('reply-preview-box').style.display = 'none'; };
 
         msgInput.addEventListener('input', function() {
-            this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';
-            if(!currentMessagesRefPath) return;
+            this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; if(!currentMessagesRefPath) return;
             const roomID = currentChatMode === 'global' ? 'global' : (myUserId < currentChatTargetId ? `${myUserId}_${currentChatTargetId}` : `${currentChatTargetId}_${myUserId}`);
             set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: true });
-            clearTimeout(window.typingTimeout);
-            window.typingTimeout = setTimeout(() => set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }), 1500);
+            clearTimeout(window.typingTimeout); window.typingTimeout = setTimeout(() => set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }), 1500);
         });
 
         function sendMessage(dataObj) {
             if(!currentMessagesRefPath) return;
-            dataObj.name = myName; dataObj.timestamp = Date.now();
-            if(replyingToMsg) dataObj.replyTo = replyingToMsg;
+            dataObj.name = myName; dataObj.timestamp = Date.now(); if(replyingToMsg) dataObj.replyTo = replyingToMsg;
             push(ref(db, currentMessagesRefPath), dataObj);
             const roomID = currentChatMode === 'global' ? 'global' : (myUserId < currentChatTargetId ? `${myUserId}_${currentChatTargetId}` : `${currentChatTargetId}_${myUserId}`);
             set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false });
             window.cancelReply(); msgInput.style.height = 'auto';
         }
 
-        function sendText() {
-            const text = msgInput.value.trim();
-            if(!text) return; sendMessage({ type: 'text', content: text });
-            msgInput.value = ''; msgInput.focus();
-        }
-        document.getElementById('send-btn').addEventListener('click', sendText);
-        msgInput.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } });
+        document.getElementById('send-btn').addEventListener('click', () => { const text = msgInput.value.trim(); if(text) { sendMessage({ type: 'text', content: text }); msgInput.value = ''; msgInput.focus(); }});
+        msgInput.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('send-btn').click(); } });
 
-        // ================= المرفقات والصوتيات =================
         const fileInput = document.getElementById('file-input');
         document.getElementById('attach-btn').addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', () => {
-            const file = fileInput.files[0]; if (!file) return;
-            if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى 3 ميجابايت.");
-            const reader = new FileReader(); reader.onload = e => sendMessage({ type: 'file', fileName: file.name, content: e.target.result });
-            reader.readAsDataURL(file); fileInput.value = '';
+            const file = fileInput.files[0]; if (!file) return; if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى 3 ميجابايت.");
+            const reader = new FileReader(); reader.onload = e => sendMessage({ type: 'file', fileName: file.name, content: e.target.result }); reader.readAsDataURL(file); fileInput.value = '';
         });
 
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data.type === 'FILE_SHARED_FROM_OS' && event.data.file) {
-                const file = event.data.file;
-                if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى للملفات المشتركة 3 ميجابايت.");
-                if (!currentMessagesRefPath) return alert("الرجاء فتح محادثة أولاً لمشاركة الملف!");
-                const reader = new FileReader(); 
-                reader.onload = e => { sendMessage({ type: 'file', fileName: file.name, content: e.target.result }); alert(`تم إرسال الملف (${file.name}) بنجاح!`); };
-                reader.readAsDataURL(file);
+                const file = event.data.file; if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى 3 ميجابايت."); if (!currentMessagesRefPath) return alert("افتح محادثة أولاً!");
+                const reader = new FileReader(); reader.onload = e => { sendMessage({ type: 'file', fileName: file.name, content: e.target.result }); alert(`تم إرسال (${file.name}) بنجاح!`); }; reader.readAsDataURL(file);
             }
         });
 
-        window.toggleAudio = function(id) {
-            const audio = document.getElementById(id), icon = document.getElementById('icon-' + id);
-            if (audio.paused) { document.querySelectorAll('audio').forEach(a => { if (a.id !== id && a.id !== 'notification-sound' && !a.paused) { a.pause(); document.getElementById('icon-' + a.id).className = 'fa-solid fa-play'; } }); audio.play(); icon.className = 'fa-solid fa-pause'; } 
-            else { audio.pause(); icon.className = 'fa-solid fa-play'; }
-        };
-        window.updateAudioProgress = function(id) {
-            const audio = document.getElementById(id), progress = document.getElementById('progress-' + id), timeEl = document.getElementById('time-' + id);
-            if(audio.duration) { progress.style.width = ((audio.currentTime / audio.duration) * 100) + '%'; timeEl.innerText = `${String(Math.floor(audio.currentTime / 60)).padStart(2, '0')}:${String(Math.floor(audio.currentTime % 60)).padStart(2, '0')}`; }
-        };
+        window.toggleAudio = function(id) { const audio = document.getElementById(id), icon = document.getElementById('icon-' + id); if (audio.paused) { document.querySelectorAll('audio').forEach(a => { if (a.id !== id && a.id !== 'notification-sound' && !a.paused) { a.pause(); document.getElementById('icon-' + a.id).className = 'fa-solid fa-play'; } }); audio.play(); icon.className = 'fa-solid fa-pause'; } else { audio.pause(); icon.className = 'fa-solid fa-play'; } };
+        window.updateAudioProgress = function(id) { const audio = document.getElementById(id), progress = document.getElementById('progress-' + id), timeEl = document.getElementById('time-' + id); if(audio.duration) { progress.style.width = ((audio.currentTime / audio.duration) * 100) + '%'; timeEl.innerText = `${String(Math.floor(audio.currentTime / 60)).padStart(2, '0')}:${String(Math.floor(audio.currentTime % 60)).padStart(2, '0')}`; } };
         window.audioEnded = function(id) { document.getElementById('icon-' + id).className = 'fa-solid fa-play'; document.getElementById('progress-' + id).style.width = '0%'; document.getElementById('time-' + id).innerText = document.getElementById('time-' + id).getAttribute('data-duration'); };
 
         let mediaRecorder, audioChunks = [], recordTimer, recordingSeconds = 0, lastRecordedTimeString = "00:00", activeMediaStream = null; 
@@ -753,153 +779,48 @@
         function hideRecordingUI() { clearInterval(recordTimer); recordingUI.style.display = 'none'; normalUI.style.display = 'flex'; document.getElementById('send-btn').style.display = 'flex'; }
 
         document.getElementById('mic-btn').addEventListener('click', async () => {
-            try {
-                activeMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaRecorder = new MediaRecorder(activeMediaStream); audioChunks = [];
-                mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
-                normalUI.style.display = 'none'; document.getElementById('send-btn').style.display = 'none'; recordingUI.style.display = 'flex';
-                recordingSeconds = 0; lastRecordedTimeString = "00:00"; recordTimerEl.innerText = "00:00";
-                recordTimer = setInterval(() => { recordingSeconds++; lastRecordedTimeString = `${String(Math.floor(recordingSeconds / 60)).padStart(2, '0')}:${String(Math.floor(recordingSeconds % 60)).padStart(2, '0')}`; recordTimerEl.innerText = lastRecordedTimeString; }, 1000);
-                mediaRecorder.start();
-            } catch(err) { alert('الرجاء السماح بصلاحية الميكروفون!'); }
+            try { activeMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaRecorder = new MediaRecorder(activeMediaStream); audioChunks = []; mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); }; normalUI.style.display = 'none'; document.getElementById('send-btn').style.display = 'none'; recordingUI.style.display = 'flex'; recordingSeconds = 0; lastRecordedTimeString = "00:00"; recordTimerEl.innerText = "00:00"; recordTimer = setInterval(() => { recordingSeconds++; lastRecordedTimeString = `${String(Math.floor(recordingSeconds / 60)).padStart(2, '0')}:${String(Math.floor(recordingSeconds % 60)).padStart(2, '0')}`; recordTimerEl.innerText = lastRecordedTimeString; }, 1000); mediaRecorder.start(); } catch(err) { alert('الرجاء السماح بصلاحية الميكروفون!'); }
         });
         document.getElementById('cancel-record-btn').addEventListener('click', () => { if(mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.onstop = null; mediaRecorder.stop(); } hideRecordingUI(); releaseMicrophone(); });
-        document.getElementById('send-record-btn').addEventListener('click', () => {
-            if(mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.onstop = () => {
-                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' }); const reader = new FileReader();
-                    reader.onloadend = () => { sendMessage({ type: 'audio', content: reader.result, durationText: lastRecordedTimeString }); releaseMicrophone(); }; reader.readAsDataURL(audioBlob);
-                }; mediaRecorder.stop();
-            } hideRecordingUI(); 
-        });
+        document.getElementById('send-record-btn').addEventListener('click', () => { if(mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.onstop = () => { const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' }); const reader = new FileReader(); reader.onloadend = () => { sendMessage({ type: 'audio', content: reader.result, durationText: lastRecordedTimeString }); releaseMicrophone(); }; reader.readAsDataURL(audioBlob); }; mediaRecorder.stop(); } hideRecordingUI(); });
 
-        // ================= دالة معالجة النصوص (الروابط واليوتيوب) =================
         function processTextForLinks(text) {
             let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
-            
-            let ytVideoId = null;
-            const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-            const ytMatch = safeText.match(ytRegex);
+            let ytVideoId = null; const ytMatch = safeText.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
             if (ytMatch && ytMatch[1]) { ytVideoId = ytMatch[1]; }
-
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            let formattedText = safeText.replace(urlRegex, function(url) {
-                return `<a href="${url}" target="_blank">${url}</a>`;
-            });
-
-            formattedText = formattedText.replace(/\n/g, '<br>');
-
-            if (ytVideoId) {
-                const ytPreviewHtml = `
-                    <div class="yt-preview">
-                        <a href="https://www.youtube.com/watch?v=${ytVideoId}" target="_blank" title="تشغيل الفيديو">
-                            <img src="https://img.youtube.com/vi/${ytVideoId}/hqdefault.jpg" alt="YouTube Preview">
-                            <div class="yt-play-icon"><i class="fa-brands fa-youtube"></i></div>
-                        </a>
-                    </div>
-                `;
-                formattedText += ytPreviewHtml;
-            }
-
+            let formattedText = safeText.replace(/(https?:\/\/[^\s]+)/g, url => `<a href="${url}" target="_blank">${url}</a>`).replace(/\n/g, '<br>');
+            if (ytVideoId) formattedText += `<div class="yt-preview"><a href="https://www.youtube.com/watch?v=${ytVideoId}" target="_blank" title="تشغيل الفيديو"><img src="https://img.youtube.com/vi/${ytVideoId}/hqdefault.jpg" alt="YouTube Preview"><div class="yt-play-icon"><i class="fa-brands fa-youtube"></i></div></a></div>`;
             return formattedText;
         }
 
-        // ================= رسم الرسائل =================
         function renderMsg(msgKey, msgObj, isMe) {
             const div = document.createElement('div'); div.id = 'msg-' + msgKey; div.className = `msg-bubble ${isMe ? 'msg-me' : 'msg-other'}`;
-            let htmlContent = '', textExcerptForReply = ''; 
+            let htmlContent = '', textExcerptForReply = '', safeContentToCopy = ''; 
+            let quoteHtml = ''; if(msgObj.replyTo) quoteHtml = `<div class="quoted-msg" onclick="prepareReply('${msgObj.name}', '${msgObj.content ? 'نص' : 'مرفق'}')"><strong>${msgObj.replyTo.name}</strong><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${msgObj.replyTo.text}</div></div>`;
+
+            if (msgObj.type === 'text') { htmlContent = processTextForLinks(msgObj.content); textExcerptForReply = msgObj.content; safeContentToCopy = msgObj.content.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n'); } 
+            else if (msgObj.type === 'file') { if (msgObj.content.startsWith('data:image/')) { htmlContent = `<img src="${msgObj.content}" class="image-preview" onclick="openLightbox(this.src)">`; textExcerptForReply = '📷 صورة'; } else { htmlContent = `<a href="${msgObj.content}" download="${msgObj.fileName}" class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName}</div></a>`; textExcerptForReply = '📁 ملف'; } } 
+            else if (msgObj.type === 'audio') { const audioId = 'audio-' + msgKey; const durationText = msgObj.durationText || '00:00'; htmlContent = `<div class="custom-audio-player"><button class="play-btn" onclick="toggleAudio('${audioId}')"><i class="fa-solid fa-play" id="icon-${audioId}"></i></button><div class="audio-progress"><div class="progress-bar" id="progress-${audioId}"></div></div><div class="audio-time" id="time-${audioId}" data-duration="${durationText}">${durationText}</div><audio id="${audioId}" src="${msgObj.content}" style="display:none;" ontimeupdate="updateAudioProgress('${audioId}')" onended="audioEnded('${audioId}')"></audio></div>`; textExcerptForReply = '🎤 صوت'; }
+
+            // ================= تعديل هام للأدمين: إظهار زر "حذف للجميع" لكل الرسائل =================
+            const showDeleteBtn = isMe || myRole === 'admin';
             
-            let quoteHtml = '';
-            if(msgObj.replyTo) {
-                quoteHtml = `<div class="quoted-msg" onclick="prepareReply('${msgObj.name}', '${msgObj.content ? 'نص' : 'مرفق'}')"><strong>${msgObj.replyTo.name}</strong><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${msgObj.replyTo.text}</div></div>`;
-            }
-
-            let safeContentToCopy = '';
-
-            if (msgObj.type === 'text') { 
-                htmlContent = processTextForLinks(msgObj.content); 
-                textExcerptForReply = msgObj.content; 
-                // تجهيز النص للنسخ بأمان
-                safeContentToCopy = msgObj.content.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n');
-            } 
-            else if (msgObj.type === 'file') {
-                if (msgObj.content.startsWith('data:image/')) { htmlContent = `<img src="${msgObj.content}" class="image-preview" onclick="openLightbox(this.src)">`; textExcerptForReply = '📷 صورة'; } 
-                else { htmlContent = `<a href="${msgObj.content}" download="${msgObj.fileName}" class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName}</div></a>`; textExcerptForReply = '📁 ملف'; }
-            } else if (msgObj.type === 'audio') {
-                const audioId = 'audio-' + msgKey; const durationText = msgObj.durationText || '00:00';
-                htmlContent = `<div class="custom-audio-player"><button class="play-btn" onclick="toggleAudio('${audioId}')"><i class="fa-solid fa-play" id="icon-${audioId}"></i></button><div class="audio-progress"><div class="progress-bar" id="progress-${audioId}"></div></div><div class="audio-time" id="time-${audioId}" data-duration="${durationText}">${durationText}</div><audio id="${audioId}" src="${msgObj.content}" style="display:none;" ontimeupdate="updateAudioProgress('${audioId}')" onended="audioEnded('${audioId}')"></audio></div>`;
-                textExcerptForReply = '🎤 صوت';
-            }
-
-            let actionsHtml = `
-                <div class="msg-options" onclick="toggleMsgMenu('${msgKey}'); event.stopPropagation();"><i class="fa-solid fa-ellipsis-vertical"></i>
-                    <div class="msg-menu" id="menu-${msgKey}">
-                        <button onclick="prepareReply('${msgObj.name}', '${textExcerptForReply}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-reply"></i> رد</button>
-                        ${msgObj.type === 'text' ? `<button onclick="copyMsgText('${safeContentToCopy}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-copy"></i> نسخ</button>` : ''}
-                        ${isMe ? `<button class="delete-btn" onclick="deleteMsg('${msgKey}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-trash"></i> حذف للجميع</button>` : ''}
-                    </div>
-                </div>`;
+            let actionsHtml = `<div class="msg-options" onclick="toggleMsgMenu('${msgKey}'); event.stopPropagation();"><i class="fa-solid fa-ellipsis-vertical"></i><div class="msg-menu" id="menu-${msgKey}"><button onclick="prepareReply('${msgObj.name}', '${textExcerptForReply}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-reply"></i> رد</button>${msgObj.type === 'text' ? `<button onclick="copyMsgText('${safeContentToCopy}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-copy"></i> نسخ</button>` : ''}${showDeleteBtn ? `<button class="delete-btn" onclick="deleteMsg('${msgKey}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-trash"></i> حذف للجميع</button>` : ''}</div></div>`;
             
-            let reactMenuHtml = `
-                <div class="reaction-menu" id="react-${msgKey}">
-                    <span class="reaction-emoji" onclick="addReaction('${msgKey}', '👍'); event.stopPropagation();">👍</span>
-                    <span class="reaction-emoji" onclick="addReaction('${msgKey}', '❤️'); event.stopPropagation();">❤️</span>
-                    <span class="reaction-emoji" onclick="addReaction('${msgKey}', '😂'); event.stopPropagation();">😂</span>
-                    <span class="reaction-emoji" onclick="addReaction('${msgKey}', '😮'); event.stopPropagation();">😮</span>
-                    <span class="reaction-emoji" onclick="addReaction('${msgKey}', '😢'); event.stopPropagation();">😢</span>
-                    <span class="reaction-emoji" onclick="addReaction('${msgKey}', '🙏'); event.stopPropagation();">🙏</span>
-                </div>`;
-
-            let readStatusHtml = '';
-            if (isMe && currentChatMode === 'private') {
-                const isRead = msgObj.readBy ? true : false;
-                const iconClass = isRead ? "fa-solid fa-check-double status-read" : "fa-solid fa-check-double";
-                readStatusHtml = `<i id="status-${msgKey}" class="${iconClass}" style="transition: color 0.4s ease, text-shadow 0.4s ease; margin-right: 3px;"></i>`;
-            }
-
+            let reactMenuHtml = `<div class="reaction-menu" id="react-${msgKey}"><span class="reaction-emoji" onclick="addReaction('${msgKey}', '👍'); event.stopPropagation();">👍</span><span class="reaction-emoji" onclick="addReaction('${msgKey}', '❤️'); event.stopPropagation();">❤️</span><span class="reaction-emoji" onclick="addReaction('${msgKey}', '😂'); event.stopPropagation();">😂</span><span class="reaction-emoji" onclick="addReaction('${msgKey}', '😮'); event.stopPropagation();">😮</span><span class="reaction-emoji" onclick="addReaction('${msgKey}', '😢'); event.stopPropagation();">😢</span><span class="reaction-emoji" onclick="addReaction('${msgKey}', '🙏'); event.stopPropagation();">🙏</span></div>`;
+            
+            let readStatusHtml = ''; if (isMe && currentChatMode === 'private') readStatusHtml = `<i id="status-${msgKey}" class="${msgObj.readBy ? "fa-solid fa-check-double status-read" : "fa-solid fa-check-double"}" style="transition: color 0.4s ease, text-shadow 0.4s ease; margin-right: 3px;"></i>`;
             const timeStr = msgObj.timestamp ? new Date(msgObj.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 
-            div.innerHTML = `
-                ${actionsHtml} 
-                ${reactMenuHtml}
-                ${!isMe ? `<span class="sender-name">${msgObj.name}</span>` : ''} 
-                ${quoteHtml} 
-                <div>${htmlContent}</div> 
-                <div class="msg-meta">${timeStr} ${readStatusHtml}</div>
-                <div class="reactions-display hidden" id="reactions-display-${msgKey}"></div>
-            `;
-            
+            div.innerHTML = `${actionsHtml}${reactMenuHtml}${!isMe ? `<span class="sender-name">${msgObj.name}</span>` : ''}${quoteHtml}<div>${htmlContent}</div><div class="msg-meta">${timeStr} ${readStatusHtml}</div><div class="reactions-display hidden" id="reactions-display-${msgKey}"></div>`;
             chatMessages.appendChild(div); setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
-            if (msgObj.reactions) { updateReactionsUI(msgKey, msgObj.reactions); }
+            if (msgObj.reactions) updateReactionsUI(msgKey, msgObj.reactions);
 
             let touchStartX = 0, touchStartY = 0, pressTimer;
-            const startPress = (e) => {
-                if(e.target.closest('a') || e.target.closest('.yt-preview')) return; 
-
-                if(e.touches) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }
-                pressTimer = setTimeout(() => {
-                    toggleReactMenu(msgKey);
-                    if (navigator.vibrate) navigator.vibrate(50);
-                }, 500); 
-            };
+            const startPress = (e) => { if(e.target.closest('a') || e.target.closest('.yt-preview')) return; if(e.touches) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; } pressTimer = setTimeout(() => { toggleReactMenu(msgKey); if (navigator.vibrate) navigator.vibrate(50); }, 500); };
             const cancelPress = () => { clearTimeout(pressTimer); };
-
-            div.addEventListener('touchstart', startPress, {passive: true});
-            div.addEventListener('touchend', e => {
-                cancelPress();
-                let diffX = e.changedTouches ? e.changedTouches[0].clientX - touchStartX : 0;
-                if (Math.abs(diffX) > 50) { prepareReply(msgObj.name, textExcerptForReply); }
-                div.style.transform = `translateX(0)`; 
-            });
-            div.addEventListener('touchmove', e => {
-                let diffX = e.touches[0].clientX - touchStartX;
-                let diffY = e.touches[0].clientY - touchStartY;
-                if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) cancelPress();
-                if ((isMe && diffX < -30) || (!isMe && diffX > 30)) { div.style.transform = `translateX(${diffX}px)`; }
-            }, {passive: true});
-
-            div.addEventListener('mousedown', startPress);
-            div.addEventListener('mouseup', cancelPress);
-            div.addEventListener('mouseleave', cancelPress);
+            div.addEventListener('touchstart', startPress, {passive: true}); div.addEventListener('touchend', e => { cancelPress(); let diffX = e.changedTouches ? e.changedTouches[0].clientX - touchStartX : 0; if (Math.abs(diffX) > 50) { prepareReply(msgObj.name, textExcerptForReply); } div.style.transform = `translateX(0)`; }); div.addEventListener('touchmove', e => { let diffX = e.touches[0].clientX - touchStartX; let diffY = e.touches[0].clientY - touchStartY; if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) cancelPress(); if ((isMe && diffX < -30) || (!isMe && diffX > 30)) { div.style.transform = `translateX(${diffX}px)`; } }, {passive: true});
+            div.addEventListener('mousedown', startPress); div.addEventListener('mouseup', cancelPress); div.addEventListener('mouseleave', cancelPress);
         }
     </script>
 </body>
