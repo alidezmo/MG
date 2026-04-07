@@ -373,8 +373,11 @@
 
         function generateUserIdFromName(name) { return 'user_' + name.trim().replace(/\s+/g, '_').toLowerCase(); }
 
-        const savedCode = localStorage.getItem('chat_passcode');
-        if (myName && savedCode === SECRET_ROOM_CODE && myUserId) { startApp(); }
+                const savedCode = localStorage.getItem('chat_passcode');
+        // تأخير التشغيل التلقائي جزء من الثانية حتى يكتمل تحميل كافة الدوال بالأسفل
+        setTimeout(() => {
+            if (myName && savedCode === SECRET_ROOM_CODE && myUserId) { startApp(); }
+        }, 0);
 
         document.getElementById('start-btn').addEventListener('click', () => {
             const name = document.getElementById('username-input').value.trim(), code = document.getElementById('passcode-input').value.trim();
