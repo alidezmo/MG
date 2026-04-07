@@ -8,14 +8,16 @@
   "theme_color": "#2563eb",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/192/512/512113.png",
+      "src": "./icon.svg",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/512/512113.png",
+      "src": "./icon.svg",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ],
   "share_target": {
@@ -28,14 +30,7 @@
       "files": [
         {
           "name": "shared_file",
-          "accept": [
-            "image/*", 
-            "video/*", 
-            "audio/*", 
-            "application/pdf", 
-            "application/msword", 
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          ]
+          "accept": ["image/*", "video/*", "audio/*", "application/pdf", "application/msword"]
         }
       ]
     }
