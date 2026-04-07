@@ -1,12 +1,11 @@
 {
   "name": "MG HOME Chat",
   "short_name": "MG HOME",
-  "description": "تطبيق محادثة مشفر للتواصل السريع",
-  "start_url": "./index.html",
+  "description": "تطبيق محادثة مشفر",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#f3f4f6",
   "theme_color": "#2563eb",
-  "orientation": "portrait",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/192/512/512113.png",
