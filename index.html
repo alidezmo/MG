@@ -157,11 +157,9 @@
         .msg-me a { color: #dbeafe; }
         .dark-theme .msg-other a { color: #60a5fa; }
         
-        /* مشغل يوتيوب */
         .yt-preview { position: relative; width: 100%; max-width: 320px; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; margin-top: 10px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .yt-preview iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
 
-        /* زر التحميل */
         .media-download-btn {
             display: inline-flex; align-items: center; gap: 5px;
             background: rgba(0,0,0,0.05); color: var(--text-color);
@@ -187,7 +185,6 @@
         .msg-menu button:hover { background: var(--hover-bg); color: var(--primary-color); }
         .msg-menu .delete-btn:hover { color: #ef4444; background: rgba(239, 68, 68, 0.05); }
 
-        /* تعديل التفاعلات لمنع القص */
         .reaction-menu { 
             display: none; position: absolute; top: -45px; 
             background: var(--card-bg); box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
@@ -222,7 +219,6 @@
         .input-wrapper { flex: 1; display: flex; align-items: flex-end; background: var(--input-bg); border-radius: 24px; padding: 5px 10px; transition: 0.3s; min-height: 45px; border: 1px solid transparent; }
         .input-wrapper:focus-within { border-color: var(--primary-color); background: var(--card-bg); }
         
-        /* إخفاء سكرول الإدخال مع بقاء التمرير */
         .chat-input { flex: 1; padding: 10px 5px; border: none; background: transparent; outline: none; font-size: 15px; color: var(--text-color); resize: none; max-height: 100px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
         .chat-input::-webkit-scrollbar { display: none; }
         
@@ -404,8 +400,19 @@
     <script>
         if ('serviceWorker' in navigator) { 
             navigator.serviceWorker.register('./sw.js', { scope: './' })
-            .then(() => console.log("Service Worker Registered!"))
+            .then(reg => {
+                console.log("Service Worker Registered!");
+                navigator.serviceWorker.ready.then((registration) => {
+                    if (registration.active) {
+                        registration.active.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
+                    }
+                });
+            })
             .catch(() => console.log("Service Worker Failed")); 
+            
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
+            }
         }
         
         let deferredPrompt;
@@ -421,6 +428,10 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getDatabase, ref, push, onValue, set, update, remove, onDisconnect, off, query, limitToLast, onChildAdded, onChildRemoved, onChildChanged, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        // ================= إعدادات Cloudinary الخاصة بك =================
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/daoenc5dp/auto/upload";
+        const CLOUDINARY_UPLOAD_PRESET = "Mg_home_preset";
 
         const firebaseConfig = {
           apiKey: "AIzaSyC7-tcbiTsWceNDICdiFOYw5xX8060-lEk",
@@ -597,17 +608,6 @@
             document.getElementById('my-name-display').innerText = myName; document.getElementById('my-avatar').innerText = myName.charAt(0).toUpperCase();
             if (myRole === 'admin') { document.getElementById('admin-panel-btn').style.display = 'block'; }
             registerInFirebase(); listenForNotifications('messages_global', 'global', 'global'); switchChat('global', 'المجموعة العامة');
-            
-            // طلب الملف من الحارس فوراً بمجرد فتح الشات لأول مرة
-            if ('serviceWorker' in navigator) {
-                if (navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.controller.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
-                } else {
-                    navigator.serviceWorker.ready.then((reg) => {
-                        if (reg.active) reg.active.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
-                    });
-                }
-            }
         }
 
         function timeAgo(timestamp) {
@@ -718,8 +718,12 @@
 
         function showAttachmentPreview(file, dataUrl) {
             window.pendingAttachment = {
-                fileName: file.name, content: dataUrl, type: 'file',
-                isImage: dataUrl.startsWith('data:image/'), isVideo: dataUrl.startsWith('data:video/')
+                fileObj: file,
+                fileName: file.name, 
+                content: dataUrl, 
+                type: 'file',
+                isImage: dataUrl.startsWith('data:image/'), 
+                isVideo: dataUrl.startsWith('data:video/')
             };
             document.getElementById('file-preview-box').style.display = 'block'; document.getElementById('attachment-name').innerText = file.name;
             const thumb = document.getElementById('attachment-thumb'), icon = document.getElementById('attachment-icon');
@@ -733,19 +737,19 @@
         const fileInput = document.getElementById('file-input');
         document.getElementById('attach-btn').addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', () => {
-            const file = fileInput.files[0]; if (!file) return; if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى 3 ميجابايت.");
+            const file = fileInput.files[0]; if (!file) return; 
+            if (file.size > 50 * 1024 * 1024) return alert("الحد الأقصى 50 ميجابايت."); 
             const reader = new FileReader(); reader.onload = e => showAttachmentPreview(file, e.target.result); reader.readAsDataURL(file); fileInput.value = '';
         });
 
-        // استقبال الملفات من المشاركة بعد التسجيل أو أثناء الاستخدام
+        // استقبال الملفات من المشاركة 
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data.type === 'FILE_SHARED_FROM_OS' && event.data.file) {
                 const file = event.data.file; 
-                if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى 3 ميجابايت."); 
+                if (file.size > 50 * 1024 * 1024) return alert("الحد الأقصى 50 ميجابايت."); 
                 
                 const reader = new FileReader(); 
                 reader.onload = e => {
-                    // سيتم العرض فوراً لأننا أصبحنا نسأل بعد تسجيل الدخول فقط!
                     showAttachmentPreview(file, e.target.result);
                 }; 
                 reader.readAsDataURL(file);
@@ -758,26 +762,63 @@
             set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: true }); clearTimeout(window.typingTimeout); window.typingTimeout = setTimeout(() => set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }), 1500);
         });
 
-        // ================= الإرسال المدمج (بدون تكرار) مع إغلاق الكيبورد وتمرير الشاشة =================
-        function sendMessage(dataObj) {
+        // ================= الإرسال المدمج مع رفع Cloudinary =================
+        function renderTempMsg(msgKey, msgObj) {
+            const div = document.createElement('div'); div.id = 'msg-' + msgKey; div.className = `msg-bubble msg-me`;
+            div.style.opacity = '0.7'; let htmlContent = '';
+            
+            if (msgObj.type === 'file') {
+                if (msgObj.content.startsWith('data:image/')) htmlContent = `<div style="position:relative;"><img src="${msgObj.content}" class="image-preview"><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
+                else if (msgObj.content.startsWith('data:video/')) htmlContent = `<div style="position:relative;"><video src="${msgObj.content}" style="max-width:100%; border-radius:12px;"></video><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
+                else htmlContent = `<div style="position:relative; padding:10px;"><div class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName}</div></div><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
+            } else if (msgObj.type === 'audio') {
+                htmlContent = `<div style="position:relative;"><div class="custom-audio-player"><button class="play-btn"><i class="fa-solid fa-play"></i></button><div class="audio-progress"></div><div class="audio-time">${msgObj.durationText}</div></div><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
+            }
+
+            let captionHtml = msgObj.caption ? `<div style="margin-top:8px; font-size:14px;">${msgObj.caption}</div>` : '';
+            div.innerHTML = `<div>${htmlContent}</div>${captionHtml}<div class="msg-meta">جاري الإرسال... <i class="fa-regular fa-clock"></i></div>`;
+            document.getElementById('chat-messages').appendChild(div); 
+            setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 100);
+        }
+
+        async function sendMessage(dataObj) {
             if(!currentMessagesRefPath) return; 
             dataObj.name = myName; dataObj.timestamp = Date.now(); if(replyingToMsg) dataObj.replyTo = replyingToMsg;
             
             const newRef = push(ref(db, currentMessagesRefPath));
             const msgKey = newRef.key;
             
-            if (dataObj.type === 'file' || dataObj.type === 'audio') { window.uploadingKeys.push(msgKey); }
-            
-            set(newRef, dataObj).then(() => {
-                if(window.uploadingKeys.includes(msgKey)) {
+            if (dataObj.rawFile) {
+                window.uploadingKeys.push(msgKey);
+                renderTempMsg(msgKey, dataObj);
+
+                const formData = new FormData();
+                formData.append('file', dataObj.rawFile);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+                try {
+                    const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+                    const uploadData = await response.json();
+
+                    if (uploadData.secure_url) {
+                        dataObj.content = uploadData.secure_url; 
+                        delete dataObj.rawFile; 
+
+                        await set(newRef, dataObj);
+                        window.uploadingKeys = window.uploadingKeys.filter(k => k !== msgKey);
+                        const overlay = document.getElementById('overlay-' + msgKey); if(overlay) overlay.remove();
+                    } else {
+                        throw new Error("Cloudinary Error");
+                    }
+                } catch (err) {
                     window.uploadingKeys = window.uploadingKeys.filter(k => k !== msgKey);
-                    const overlay = document.getElementById('overlay-' + msgKey); if(overlay) overlay.remove();
+                    const overlay = document.getElementById('overlay-' + msgKey); if(overlay) overlay.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; font-size:30px;"></i>';
+                    alert("حدث خطأ أثناء رفع الملف!");
+                    return;
                 }
-            }).catch(err => {
-                window.uploadingKeys = window.uploadingKeys.filter(k => k !== msgKey);
-                const overlay = document.getElementById('overlay-' + msgKey); if(overlay) overlay.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; font-size:30px;"></i>';
-                alert("حدث خطأ أثناء الإرسال!");
-            });
+            } else {
+                await set(newRef, dataObj);
+            }
 
             const roomID = currentChatMode === 'global' ? 'global' : (myUserId < currentChatTargetId ? `${myUserId}_${currentChatTargetId}` : `${currentChatTargetId}_${myUserId}`);
             set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }); window.cancelReply(); 
@@ -788,18 +829,20 @@
             const text = msgInput.value.trim(); 
             if(text || window.pendingAttachment) { 
                 if (window.pendingAttachment) {
-                    sendMessage({ type: 'file', fileName: window.pendingAttachment.fileName, content: window.pendingAttachment.content, caption: text });
+                    sendMessage({ 
+                        type: 'file', 
+                        fileName: window.pendingAttachment.fileName, 
+                        content: window.pendingAttachment.content, 
+                        rawFile: window.pendingAttachment.fileObj, 
+                        caption: text 
+                    });
                     window.cancelAttachment();
                 } else {
                     sendMessage({ type: 'text', content: text }); 
                 }
                 msgInput.value = ''; 
                 msgInput.style.height = 'auto';
-                
-                // إغلاق الكيبورد فوراً
                 msgInput.blur(); 
-                
-                // تمرير ناعم ومضمون لأسفل الشاشة بعد الإرسال وإغلاق الكيبورد
                 setTimeout(() => { 
                     const chatBox = document.getElementById('chat-messages');
                     chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' }); 
@@ -821,7 +864,26 @@
             try { activeMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaRecorder = new MediaRecorder(activeMediaStream); audioChunks = []; mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); }; normalUI.style.display = 'none'; document.getElementById('send-btn').style.display = 'none'; recordingUI.style.display = 'flex'; recordingSeconds = 0; lastRecordedTimeString = "00:00"; recordTimerEl.innerText = "00:00"; recordTimer = setInterval(() => { recordingSeconds++; lastRecordedTimeString = `${String(Math.floor(recordingSeconds / 60)).padStart(2, '0')}:${String(Math.floor(recordingSeconds % 60)).padStart(2, '0')}`; recordTimerEl.innerText = lastRecordedTimeString; }, 1000); mediaRecorder.start(); } catch(err) { alert('الرجاء السماح بصلاحية الميكروفون!'); }
         });
         document.getElementById('cancel-record-btn').addEventListener('click', () => { if(mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.onstop = null; mediaRecorder.stop(); } hideRecordingUI(); releaseMicrophone(); });
-        document.getElementById('send-record-btn').addEventListener('click', () => { if(mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.onstop = () => { const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' }); const reader = new FileReader(); reader.onloadend = () => { sendMessage({ type: 'audio', content: reader.result, durationText: lastRecordedTimeString }); releaseMicrophone(); }; reader.readAsDataURL(audioBlob); }; mediaRecorder.stop(); } hideRecordingUI(); });
+        document.getElementById('send-record-btn').addEventListener('click', () => { 
+            if(mediaRecorder && mediaRecorder.state !== "inactive") { 
+                mediaRecorder.onstop = () => { 
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' }); 
+                    const reader = new FileReader(); 
+                    reader.onloadend = () => { 
+                        sendMessage({ 
+                            type: 'audio', 
+                            content: reader.result, 
+                            rawFile: audioBlob,     
+                            durationText: lastRecordedTimeString 
+                        }); 
+                        releaseMicrophone(); 
+                    }; 
+                    reader.readAsDataURL(audioBlob); 
+                }; 
+                mediaRecorder.stop(); 
+            } 
+            hideRecordingUI(); 
+        });
 
         function processTextForLinks(text) {
             let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
@@ -834,6 +896,9 @@
         }
 
         function renderMsg(msgKey, msgObj, isMe) {
+            const existingDiv = document.getElementById('msg-' + msgKey);
+            if (existingDiv) existingDiv.remove(); 
+
             const div = document.createElement('div'); div.id = 'msg-' + msgKey; div.className = `msg-bubble ${isMe ? 'msg-me' : 'msg-other'}`;
             let htmlContent = '', textExcerptForReply = '', safeContentToCopy = ''; 
             let quoteHtml = ''; if(msgObj.replyTo) quoteHtml = `<div class="quoted-msg" onclick="prepareReply('${msgObj.name}', '${msgObj.content ? 'نص' : 'مرفق'}')"><strong>${msgObj.replyTo.name}</strong><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${msgObj.replyTo.text}</div></div>`;
@@ -848,7 +913,7 @@
             else if (msgObj.type === 'file') { 
                 let captionHtml = msgObj.caption ? `<div style="margin-top:8px; font-size:14px;">${processTextForLinks(msgObj.caption)}</div>` : '';
                 
-                if (msgObj.content.startsWith('data:image/')) { 
+                if (msgObj.content.match(/\.(jpeg|jpg|gif|png|webp)$/i) || msgObj.content.startsWith('data:image/') || msgObj.content.includes('/image/upload/')) { 
                     htmlContent = `
                         <div style="position:relative;">
                             <img src="${msgObj.content}" class="image-preview" onclick="openLightbox(this.src)">
@@ -856,12 +921,12 @@
                         </div>
                         ${captionHtml}
                         <div style="display:flex; justify-content:flex-start; margin-top: 5px;">
-                            <a href="${msgObj.content}" download="${msgObj.fileName || 'image.png'}" class="media-download-btn"><i class="fa-solid fa-download"></i> تحميل الصورة</a>
+                            <a href="${msgObj.content}" target="_blank" download="${msgObj.fileName || 'image.png'}" class="media-download-btn"><i class="fa-solid fa-download"></i> تحميل الصورة</a>
                         </div>
                     `; 
                     textExcerptForReply = '📷 صورة' + (msgObj.caption ? ` - ${msgObj.caption}` : ''); 
                 } 
-                else if (msgObj.content.startsWith('data:video/')) {
+                else if (msgObj.content.match(/\.(mp4|webm|ogg|mov)$/i) || msgObj.content.startsWith('data:video/') || msgObj.content.includes('/video/upload/')) {
                     htmlContent = `
                         <div style="position:relative;">
                             <video src="${msgObj.content}" controls playsinline webkit-playsinline style="max-width: 100%; border-radius: 12px; margin-top: 5px; border: 1px solid var(--border-color); background: #000;"></video>
@@ -869,7 +934,7 @@
                         </div>
                         ${captionHtml}
                         <div style="display:flex; justify-content:flex-start; margin-top: 5px;">
-                            <a href="${msgObj.content}" download="${msgObj.fileName || 'video.mp4'}" class="media-download-btn"><i class="fa-solid fa-download"></i> تحميل الفيديو</a>
+                            <a href="${msgObj.content}" target="_blank" download="${msgObj.fileName || 'video.mp4'}" class="media-download-btn"><i class="fa-solid fa-download"></i> تحميل الفيديو</a>
                         </div>
                     `;
                     textExcerptForReply = '🎥 فيديو' + (msgObj.caption ? ` - ${msgObj.caption}` : '');
@@ -877,7 +942,7 @@
                 else { 
                     htmlContent = `
                         <div style="position:relative;">
-                            <a href="${msgObj.content}" download="${msgObj.fileName}" class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName}</div></a> 
+                            <a href="${msgObj.content}" target="_blank" download="${msgObj.fileName}" class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName || 'ملف مرفق'}</div></a> 
                             ${overlayHtml}
                         </div>
                         ${captionHtml}
@@ -885,7 +950,11 @@
                     textExcerptForReply = '📁 ملف'; 
                 } 
             } 
-            else if (msgObj.type === 'audio') { const audioId = 'audio-' + msgKey; const durationText = msgObj.durationText || '00:00'; htmlContent = `<div style="position:relative;"><div class="custom-audio-player"><button class="play-btn" onclick="toggleAudio('${audioId}')"><i class="fa-solid fa-play" id="icon-${audioId}"></i></button><div class="audio-progress"><div class="progress-bar" id="progress-${audioId}"></div></div><div class="audio-time" id="time-${audioId}" data-duration="${durationText}">${durationText}</div><audio id="${audioId}" src="${msgObj.content}" style="display:none;" ontimeupdate="updateAudioProgress('${audioId}')" onended="audioEnded('${audioId}')"></audio></div>${overlayHtml}</div>`; textExcerptForReply = '🎤 صوت'; }
+            else if (msgObj.type === 'audio') { 
+                const audioId = 'audio-' + msgKey; const durationText = msgObj.durationText || '00:00'; 
+                htmlContent = `<div style="position:relative;"><div class="custom-audio-player"><button class="play-btn" onclick="toggleAudio('${audioId}')"><i class="fa-solid fa-play" id="icon-${audioId}"></i></button><div class="audio-progress"><div class="progress-bar" id="progress-${audioId}"></div></div><div class="audio-time" id="time-${audioId}" data-duration="${durationText}">${durationText}</div><audio id="${audioId}" src="${msgObj.content}" style="display:none;" ontimeupdate="updateAudioProgress('${audioId}')" onended="audioEnded('${audioId}')"></audio></div>${overlayHtml}</div>`; 
+                textExcerptForReply = '🎤 صوت'; 
+            }
 
             const showDeleteBtn = isMe || myRole === 'admin';
             let actionsHtml = `<div class="msg-options" onclick="toggleMsgMenu('${msgKey}'); event.stopPropagation();"><i class="fa-solid fa-ellipsis-vertical"></i><div class="msg-menu" id="menu-${msgKey}"><button onclick="prepareReply('${msgObj.name}', '${textExcerptForReply}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-reply"></i> رد</button>${msgObj.type === 'text' ? `<button onclick="copyMsgText('${safeContentToCopy}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-copy"></i> نسخ</button>` : ''}${showDeleteBtn ? `<button class="delete-btn" onclick="deleteMsg('${msgKey}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-trash"></i> حذف للجميع</button>` : ''}</div></div>`;
@@ -896,7 +965,6 @@
             div.innerHTML = `${actionsHtml}${reactMenuHtml}${!isMe ? `<span class="sender-name">${msgObj.name}</span>` : ''}${quoteHtml}<div>${htmlContent}</div><div class="msg-meta">${timeStr} ${readStatusHtml}</div><div class="reactions-display hidden" id="reactions-display-${msgKey}"></div>`;
             chatMessages.appendChild(div); 
             
-            // تمرير ناعم ومضمون
             setTimeout(() => { 
                 const chatBox = document.getElementById('chat-messages');
                 chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' }); 
@@ -904,7 +972,6 @@
 
             if (msgObj.reactions) updateReactionsUI(msgKey, msgObj.reactions);
 
-            // ================= خوارزمية السحب (Swipe to Reply) =================
             let touchStartX = 0, touchStartY = 0, pressTimer, isSwiping = false;
             const startPress = (e) => { 
                 if(e.target.closest('a') || e.target.closest('.yt-preview') || e.target.closest('video') || e.target.closest('.media-download-btn')) return; 
