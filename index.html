@@ -32,17 +32,17 @@
         body.dark-theme {
             --primary-color: #3b82f6;
             --primary-dark: #2563eb;
-            --bg-color: #121212;     /* أسود عميق للخلفية */
-            --chat-bg: #0a0a0a;      /* أسود داكن جداً لمنطقة الشات */
-            --text-color: #e4e6eb;   /* أبيض مريح للعين */
-            --card-bg: #18191a;      /* لون القوائم والهيدر */
-            --border-color: #3a3b3c; /* خطوط فاصلة هادئة */
+            --bg-color: #121212;     
+            --chat-bg: #0a0a0a;      
+            --text-color: #e4e6eb;   
+            --card-bg: #18191a;      
+            --border-color: #3a3b3c; 
             --hover-bg: #242526;
-            --msg-me-bg: #1e40af;    /* أزرق ليلي أنيق لرسائلك */
+            --msg-me-bg: #1e40af;    
             --msg-me-text: #ffffff;
-            --msg-other-bg: #242526; /* رمادي داكن مريح لرسائل الطرف الآخر */
+            --msg-other-bg: #242526; 
             --msg-other-text: #e4e6eb;
-            --input-bg: #242526;     /* لون مربع الكتابة */
+            --input-bg: #242526;     
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; transition: background-color 0.3s, border-color 0.3s; }
@@ -137,9 +137,7 @@
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
         .chat-messages { flex: 1; padding: 60px 20px 20px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; z-index: 1; background-image: radial-gradient(var(--border-color) 1px, transparent 1px); background-size: 20px 20px; }
-        /* تحسين نقاط الخلفية في الوضع الليلي لتكون هادئة */
         .dark-theme .chat-messages { background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px); }
-
         .chat-messages::-webkit-scrollbar { width: 6px; }
         .chat-messages::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 10px; }
         
@@ -404,12 +402,12 @@
     </div>
 
     <script>
-        // تسجيل الـ Service Worker لضمان عمل PWA ومشاركة الملفات
         if ('serviceWorker' in navigator) { 
             navigator.serviceWorker.register('./sw.js', { scope: './' })
             .then(() => console.log("Service Worker Registered!"))
             .catch(() => console.log("Service Worker Failed")); 
         }
+        
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault(); deferredPrompt = e;
@@ -600,11 +598,15 @@
             if (myRole === 'admin') { document.getElementById('admin-panel-btn').style.display = 'block'; }
             registerInFirebase(); listenForNotifications('messages_global', 'global', 'global'); switchChat('global', 'المجموعة العامة');
             
-            if (window.pendingSharedFile) {
-                setTimeout(() => {
-                    showAttachmentPreview(window.pendingSharedFile.file, window.pendingSharedFile.result);
-                    window.pendingSharedFile = null;
-                }, 800);
+            // طلب الملف من الحارس فوراً بمجرد فتح الشات لأول مرة
+            if ('serviceWorker' in navigator) {
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
+                } else {
+                    navigator.serviceWorker.ready.then((reg) => {
+                        if (reg.active) reg.active.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
+                    });
+                }
             }
         }
 
@@ -735,8 +737,7 @@
             const reader = new FileReader(); reader.onload = e => showAttachmentPreview(file, e.target.result); reader.readAsDataURL(file); fileInput.value = '';
         });
 
-        // استقبال الملفات من المشاركة (واتساب وغيره) مع المعالجة المطورة
-        window.pendingSharedFile = null;
+        // استقبال الملفات من المشاركة بعد التسجيل أو أثناء الاستخدام
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data.type === 'FILE_SHARED_FROM_OS' && event.data.file) {
                 const file = event.data.file; 
@@ -744,13 +745,8 @@
                 
                 const reader = new FileReader(); 
                 reader.onload = e => {
-                    // لو الشات مفتوح، اعرض المعاينة فوراً
-                    if(document.getElementById('app-container').style.display === 'flex') {
-                        showAttachmentPreview(file, e.target.result);
-                    } else {
-                        // لو لسه في شاشة الدخول، احفظه لحد ما يدخل
-                        window.pendingSharedFile = { file: file, result: e.target.result };
-                    }
+                    // سيتم العرض فوراً لأننا أصبحنا نسأل بعد تسجيل الدخول فقط!
+                    showAttachmentPreview(file, e.target.result);
                 }; 
                 reader.readAsDataURL(file);
             }
@@ -908,7 +904,7 @@
 
             if (msgObj.reactions) updateReactionsUI(msgKey, msgObj.reactions);
 
-            // ================= تعديل خوارزمية السحب لمنع الرد العشوائي =================
+            // ================= خوارزمية السحب (Swipe to Reply) =================
             let touchStartX = 0, touchStartY = 0, pressTimer, isSwiping = false;
             const startPress = (e) => { 
                 if(e.target.closest('a') || e.target.closest('.yt-preview') || e.target.closest('video') || e.target.closest('.media-download-btn')) return; 
@@ -921,9 +917,9 @@
             
             div.addEventListener('touchend', e => { 
                 cancelPress(); 
-                if (!isSwiping) return; // لن ينفذ الرد إلا إذا كان سحباً حقيقياً
+                if (!isSwiping) return; 
                 let diffX = e.changedTouches ? e.changedTouches[0].clientX - touchStartX : 0; 
-                if (Math.abs(diffX) > 80) { prepareReply(msgObj.name, textExcerptForReply); } // يجب سحب مسافة كبيرة (80 بكسل)
+                if (Math.abs(diffX) > 80) { prepareReply(msgObj.name, textExcerptForReply); } 
                 div.style.transform = `translateX(0)`; 
                 setTimeout(() => isSwiping = false, 100);
             }); 
@@ -933,7 +929,6 @@
                 let diffY = e.touches[0].clientY - touchStartY; 
                 if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) cancelPress(); 
                 
-                // تفعيل السحب فقط إذا كانت الحركة أفقية وليست رأسية
                 if (Math.abs(diffX) > Math.abs(diffY) * 1.5) {
                     isSwiping = true;
                     if ((isMe && diffX < -30) || (!isMe && diffX > 30)) { 
