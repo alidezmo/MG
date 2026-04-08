@@ -125,7 +125,7 @@
         #clear-chat-btn { background: none; border: none; color: #ef4444; font-size: 18px; cursor: pointer; padding: 8px; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center; opacity: 0.7;}
         #clear-chat-btn:hover { background: rgba(239, 68, 68, 0.1); opacity: 1; transform: scale(1.1);}
 
-        /* ================= ستايل تحميل الرسالة الداخلية ================= */
+        /* ستايل دائرة التحميل للرسائل المرفوعة */
         .temp-msg-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center;
@@ -135,7 +135,8 @@
         .temp-spinner { font-size: 30px; color: var(--primary-color); animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; z-index: 1; background-image: radial-gradient(var(--border-color) 1px, transparent 1px); background-size: 20px 20px; }
+        /* تعديل padding-top لضمان عدم قص مربع التفاعلات في أول رسالة */
+        .chat-messages { flex: 1; padding: 60px 20px 20px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; z-index: 1; background-image: radial-gradient(var(--border-color) 1px, transparent 1px); background-size: 20px 20px; }
         .chat-messages::-webkit-scrollbar { width: 6px; }
         .chat-messages::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 10px; }
         
@@ -185,11 +186,20 @@
         .msg-menu button:hover { background: var(--hover-bg); color: var(--primary-color); }
         .msg-menu .delete-btn:hover { color: #ef4444; background: rgba(239, 68, 68, 0.05); }
 
-        .reaction-menu { display: none; position: absolute; top: -45px; left: 50%; transform: translateX(-50%); background: var(--card-bg); box-shadow: 0 5px 15px rgba(0,0,0,0.2); border-radius: 25px; padding: 5px 10px; z-index: 100; border: 1px solid var(--border-color); gap: 8px; animation: popUp 0.2s ease-out; }
-        @keyframes popUp { 0% { opacity: 0; transform: translate(-50%, 10px); } 100% { opacity: 1; transform: translate(-50%, 0); } }
+        /* ================= تعديل مربع التفاعلات لمنع القص ================= */
+        .reaction-menu { 
+            display: none; position: absolute; top: -45px; 
+            background: var(--card-bg); box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+            border-radius: 25px; padding: 5px 10px; z-index: 100; 
+            border: 1px solid var(--border-color); gap: 8px; width: max-content; 
+        }
+        /* فتح المربع للداخل لعدم الخروج عن الشاشة */
+        .msg-me .reaction-menu { right: 0; left: auto; animation: popUpReact 0.2s ease-out; }
+        .msg-other .reaction-menu { left: 0; right: auto; animation: popUpReact 0.2s ease-out; }
         .reaction-menu.show { display: flex; }
         .reaction-emoji { cursor: pointer; font-size: 20px; transition: 0.2s; }
         .reaction-emoji:hover { transform: scale(1.4) translateY(-5px); }
+        @keyframes popUpReact { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
 
         .reactions-display { position: absolute; bottom: -12px; display: flex; gap: 2px; background: var(--card-bg); padding: 2px 6px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.15); border: 1px solid var(--border-color); font-size: 14px; z-index: 5; }
         .msg-me .reactions-display { left: 10px; }
@@ -212,7 +222,7 @@
         .input-wrapper { flex: 1; display: flex; align-items: flex-end; background: var(--input-bg); border-radius: 24px; padding: 5px 10px; transition: 0.3s; min-height: 45px; border: 1px solid transparent; }
         .input-wrapper:focus-within { border-color: var(--primary-color); background: var(--card-bg); }
         
-        /* إخفاء سكرول الإدخال مع بقاء الوظيفة */
+        /* إخفاء سكرول الإدخال مع بقاء التمرير */
         .chat-input { flex: 1; padding: 10px 5px; border: none; background: transparent; outline: none; font-size: 15px; color: var(--text-color); resize: none; max-height: 100px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
         .chat-input::-webkit-scrollbar { display: none; }
         
@@ -691,8 +701,7 @@
         
         // ================= معاينة الملفات قبل الإرسال =================
         window.cancelAttachment = function() {
-            window.pendingAttachment = null;
-            document.getElementById('file-preview-box').style.display = 'none';
+            window.pendingAttachment = null; document.getElementById('file-preview-box').style.display = 'none';
         };
 
         function showAttachmentPreview(file, dataUrl) {
@@ -700,8 +709,7 @@
                 fileName: file.name, content: dataUrl, type: 'file',
                 isImage: dataUrl.startsWith('data:image/'), isVideo: dataUrl.startsWith('data:video/')
             };
-            document.getElementById('file-preview-box').style.display = 'block';
-            document.getElementById('attachment-name').innerText = file.name;
+            document.getElementById('file-preview-box').style.display = 'block'; document.getElementById('attachment-name').innerText = file.name;
             const thumb = document.getElementById('attachment-thumb'), icon = document.getElementById('attachment-icon');
             if (window.pendingAttachment.isImage || window.pendingAttachment.isVideo) {
                 thumb.src = window.pendingAttachment.isVideo ? 'https://cdn-icons-png.flaticon.com/512/4404/4404094.png' : dataUrl;
@@ -714,12 +722,10 @@
         document.getElementById('attach-btn').addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', () => {
             const file = fileInput.files[0]; if (!file) return; if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى 3 ميجابايت.");
-            const reader = new FileReader(); 
-            reader.onload = e => showAttachmentPreview(file, e.target.result); 
-            reader.readAsDataURL(file); 
-            fileInput.value = '';
+            const reader = new FileReader(); reader.onload = e => showAttachmentPreview(file, e.target.result); reader.readAsDataURL(file); fileInput.value = '';
         });
 
+        // استقبال الملفات من المشاركة (واتساب وغيره)
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data.type === 'FILE_SHARED_FROM_OS' && event.data.file) {
                 const file = event.data.file; if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى 3 ميجابايت."); if (!currentMessagesRefPath) return alert("افتح محادثة أولاً!");
@@ -733,7 +739,7 @@
             set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: true }); clearTimeout(window.typingTimeout); window.typingTimeout = setTimeout(() => set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }), 1500);
         });
 
-        // ================= الإرسال بدائرة التحميل المدمجة (Spinner) =================
+        // ================= الإرسال بدائرة التحميل المدمجة =================
         function renderTempMsg(tempId, msgObj) {
             const div = document.createElement('div'); div.id = tempId; div.className = `msg-bubble msg-me`;
             div.style.opacity = '0.7'; let htmlContent = '';
@@ -748,8 +754,8 @@
 
             let captionHtml = msgObj.caption ? `<div style="margin-top:8px; font-size:14px;">${msgObj.caption}</div>` : '';
             div.innerHTML = `<div>${htmlContent}</div>${captionHtml}<div class="msg-meta">جاري الإرسال... <i class="fa-regular fa-clock"></i></div>`;
-            document.getElementById('chat-messages').appendChild(div);
-            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+            document.getElementById('chat-messages').appendChild(div); 
+            setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 100);
         }
 
         function sendMessage(dataObj) {
@@ -757,7 +763,6 @@
             dataObj.name = myName; dataObj.timestamp = Date.now(); if(replyingToMsg) dataObj.replyTo = replyingToMsg;
             
             const tempId = 'temp-' + Date.now();
-            // إظهار الرسالة المؤقتة إذا كانت ميديا (صورة، فيديو، ملف، صوت) لبيان التحميل
             if (dataObj.type === 'file' || dataObj.type === 'audio') { renderTempMsg(tempId, dataObj); }
             
             push(ref(db, currentMessagesRefPath), dataObj).then(() => {
@@ -767,8 +772,8 @@
             });
 
             const roomID = currentChatMode === 'global' ? 'global' : (myUserId < currentChatTargetId ? `${myUserId}_${currentChatTargetId}` : `${currentChatTargetId}_${myUserId}`);
-            set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }); 
-            window.cancelReply(); msgInput.style.height = 'auto';
+            set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }); window.cancelReply(); 
+            msgInput.style.height = 'auto';
         }
 
         document.getElementById('send-btn').addEventListener('click', () => { 
@@ -780,7 +785,10 @@
                 } else {
                     sendMessage({ type: 'text', content: text }); 
                 }
-                msgInput.value = ''; msgInput.focus(); 
+                msgInput.value = ''; 
+                msgInput.style.height = 'auto';
+                msgInput.blur(); // إغلاق الكيبورد
+                setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 150);
             }
         });
         msgInput.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('send-btn').click(); } });
@@ -857,7 +865,8 @@
             const timeStr = msgObj.timestamp ? new Date(msgObj.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 
             div.innerHTML = `${actionsHtml}${reactMenuHtml}${!isMe ? `<span class="sender-name">${msgObj.name}</span>` : ''}${quoteHtml}<div>${htmlContent}</div><div class="msg-meta">${timeStr} ${readStatusHtml}</div><div class="reactions-display hidden" id="reactions-display-${msgKey}"></div>`;
-            chatMessages.appendChild(div); setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
+            chatMessages.appendChild(div); 
+            setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 100);
             if (msgObj.reactions) updateReactionsUI(msgKey, msgObj.reactions);
 
             let touchStartX = 0, touchStartY = 0, pressTimer;
