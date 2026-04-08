@@ -398,21 +398,11 @@
     </div>
 
     <script>
+        // إزالة السؤال المبكر للحارس من هنا تماماً لتجنب استلام الملف في شاشة الدخول
         if ('serviceWorker' in navigator) { 
             navigator.serviceWorker.register('./sw.js', { scope: './' })
-            .then(reg => {
-                console.log("Service Worker Registered!");
-                navigator.serviceWorker.ready.then((registration) => {
-                    if (registration.active) {
-                        registration.active.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
-                    }
-                });
-            })
+            .then(reg => console.log("Service Worker Registered!"))
             .catch(() => console.log("Service Worker Failed")); 
-            
-            if (navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
-            }
         }
         
         let deferredPrompt;
@@ -429,7 +419,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getDatabase, ref, push, onValue, set, update, remove, onDisconnect, off, query, limitToLast, onChildAdded, onChildRemoved, onChildChanged, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-        // ================= إعدادات Cloudinary الخاصة بك =================
         const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/daoenc5dp/auto/upload";
         const CLOUDINARY_UPLOAD_PRESET = "Mg_home_preset";
 
@@ -608,6 +597,13 @@
             document.getElementById('my-name-display').innerText = myName; document.getElementById('my-avatar').innerText = myName.charAt(0).toUpperCase();
             if (myRole === 'admin') { document.getElementById('admin-panel-btn').style.display = 'block'; }
             registerInFirebase(); listenForNotifications('messages_global', 'global', 'global'); switchChat('global', 'المجموعة العامة');
+            
+            // ================= التعديل هنا: سؤال الحارس بعد تسجيل الدخول فقط =================
+            setTimeout(() => {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
+                }
+            }, 500); // تأخير بسيط لضمان فتح الشات بالكامل
         }
 
         function timeAgo(timestamp) {
@@ -742,7 +738,7 @@
             const reader = new FileReader(); reader.onload = e => showAttachmentPreview(file, e.target.result); reader.readAsDataURL(file); fileInput.value = '';
         });
 
-        // استقبال الملفات من المشاركة 
+        // ================= استقبال الملفات من المشاركة (بعد سؤال التطبيق) =================
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data.type === 'FILE_SHARED_FROM_OS' && event.data.file) {
                 const file = event.data.file; 
@@ -750,6 +746,7 @@
                 
                 const reader = new FileReader(); 
                 reader.onload = e => {
+                    // العرض سيتم مباشرة لأن هذه الدالة لن تُستدعى إلا بعد فتح الشات
                     showAttachmentPreview(file, e.target.result);
                 }; 
                 reader.readAsDataURL(file);
