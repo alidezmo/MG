@@ -398,11 +398,21 @@
     </div>
 
     <script>
-        // إزالة السؤال المبكر للحارس من هنا تماماً لتجنب استلام الملف في شاشة الدخول
         if ('serviceWorker' in navigator) { 
             navigator.serviceWorker.register('./sw.js', { scope: './' })
-            .then(reg => console.log("Service Worker Registered!"))
+            .then(reg => {
+                console.log("Service Worker Registered!");
+                navigator.serviceWorker.ready.then((registration) => {
+                    if (registration.active) {
+                        registration.active.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
+                    }
+                });
+            })
             .catch(() => console.log("Service Worker Failed")); 
+            
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
+            }
         }
         
         let deferredPrompt;
@@ -597,13 +607,6 @@
             document.getElementById('my-name-display').innerText = myName; document.getElementById('my-avatar').innerText = myName.charAt(0).toUpperCase();
             if (myRole === 'admin') { document.getElementById('admin-panel-btn').style.display = 'block'; }
             registerInFirebase(); listenForNotifications('messages_global', 'global', 'global'); switchChat('global', 'المجموعة العامة');
-            
-            // ================= التعديل هنا: سؤال الحارس بعد تسجيل الدخول فقط =================
-            setTimeout(() => {
-                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.controller.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
-                }
-            }, 500); // تأخير بسيط لضمان فتح الشات بالكامل
         }
 
         function timeAgo(timestamp) {
@@ -738,7 +741,7 @@
             const reader = new FileReader(); reader.onload = e => showAttachmentPreview(file, e.target.result); reader.readAsDataURL(file); fileInput.value = '';
         });
 
-        // ================= استقبال الملفات من المشاركة (بعد سؤال التطبيق) =================
+        // استقبال الملفات من المشاركة 
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data.type === 'FILE_SHARED_FROM_OS' && event.data.file) {
                 const file = event.data.file; 
@@ -746,7 +749,6 @@
                 
                 const reader = new FileReader(); 
                 reader.onload = e => {
-                    // العرض سيتم مباشرة لأن هذه الدالة لن تُستدعى إلا بعد فتح الشات
                     showAttachmentPreview(file, e.target.result);
                 }; 
                 reader.readAsDataURL(file);
@@ -765,8 +767,12 @@
             div.style.opacity = '0.7'; let htmlContent = '';
             
             if (msgObj.type === 'file') {
-                if (msgObj.content.startsWith('data:image/')) htmlContent = `<div style="position:relative;"><img src="${msgObj.content}" class="image-preview"><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
-                else if (msgObj.content.startsWith('data:video/')) htmlContent = `<div style="position:relative;"><video src="${msgObj.content}" style="max-width:100%; border-radius:12px;"></video><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
+                const fName = (msgObj.fileName || '').toLowerCase();
+                const isImg = msgObj.content.startsWith('data:image/') || fName.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
+                const isVid = msgObj.content.startsWith('data:video/') || fName.match(/\.(mp4|webm|ogg|mov)$/i);
+                
+                if (isImg) htmlContent = `<div style="position:relative;"><img src="${msgObj.content}" class="image-preview"><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
+                else if (isVid) htmlContent = `<div style="position:relative;"><video src="${msgObj.content}" style="max-width:100%; border-radius:12px;"></video><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
                 else htmlContent = `<div style="position:relative; padding:10px;"><div class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName}</div></div><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
             } else if (msgObj.type === 'audio') {
                 htmlContent = `<div style="position:relative;"><div class="custom-audio-player"><button class="play-btn"><i class="fa-solid fa-play"></i></button><div class="audio-progress"></div><div class="audio-time">${msgObj.durationText}</div></div><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
@@ -910,7 +916,17 @@
             else if (msgObj.type === 'file') { 
                 let captionHtml = msgObj.caption ? `<div style="margin-top:8px; font-size:14px;">${processTextForLinks(msgObj.caption)}</div>` : '';
                 
-                if (msgObj.content.match(/\.(jpeg|jpg|gif|png|webp)$/i) || msgObj.content.startsWith('data:image/') || msgObj.content.includes('/image/upload/')) { 
+                // إصلاح رابط التحميل المباشر من Cloudinary
+                let downloadUrl = msgObj.content;
+                if (downloadUrl.includes('cloudinary.com') && downloadUrl.includes('/upload/')) {
+                    downloadUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
+                }
+
+                const fName = (msgObj.fileName || '').toLowerCase();
+                const isImg = msgObj.content.startsWith('data:image/') || fName.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
+                const isVid = msgObj.content.startsWith('data:video/') || fName.match(/\.(mp4|webm|ogg|mov)$/i);
+
+                if (isImg) { 
                     htmlContent = `
                         <div style="position:relative;">
                             <img src="${msgObj.content}" class="image-preview" onclick="openLightbox(this.src)">
@@ -918,12 +934,12 @@
                         </div>
                         ${captionHtml}
                         <div style="display:flex; justify-content:flex-start; margin-top: 5px;">
-                            <a href="${msgObj.content}" target="_blank" download="${msgObj.fileName || 'image.png'}" class="media-download-btn"><i class="fa-solid fa-download"></i> تحميل الصورة</a>
+                            <a href="${downloadUrl}" download="${msgObj.fileName || 'image.png'}" class="media-download-btn"><i class="fa-solid fa-download"></i> تحميل الصورة</a>
                         </div>
                     `; 
                     textExcerptForReply = '📷 صورة' + (msgObj.caption ? ` - ${msgObj.caption}` : ''); 
                 } 
-                else if (msgObj.content.match(/\.(mp4|webm|ogg|mov)$/i) || msgObj.content.startsWith('data:video/') || msgObj.content.includes('/video/upload/')) {
+                else if (isVid) {
                     htmlContent = `
                         <div style="position:relative;">
                             <video src="${msgObj.content}" controls playsinline webkit-playsinline style="max-width: 100%; border-radius: 12px; margin-top: 5px; border: 1px solid var(--border-color); background: #000;"></video>
@@ -931,7 +947,7 @@
                         </div>
                         ${captionHtml}
                         <div style="display:flex; justify-content:flex-start; margin-top: 5px;">
-                            <a href="${msgObj.content}" target="_blank" download="${msgObj.fileName || 'video.mp4'}" class="media-download-btn"><i class="fa-solid fa-download"></i> تحميل الفيديو</a>
+                            <a href="${downloadUrl}" download="${msgObj.fileName || 'video.mp4'}" class="media-download-btn"><i class="fa-solid fa-download"></i> تحميل الفيديو</a>
                         </div>
                     `;
                     textExcerptForReply = '🎥 فيديو' + (msgObj.caption ? ` - ${msgObj.caption}` : '');
@@ -939,7 +955,7 @@
                 else { 
                     htmlContent = `
                         <div style="position:relative;">
-                            <a href="${msgObj.content}" target="_blank" download="${msgObj.fileName}" class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName || 'ملف مرفق'}</div></a> 
+                            <a href="${downloadUrl}" download="${msgObj.fileName}" class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName || 'ملف مرفق'}</div></a> 
                             ${overlayHtml}
                         </div>
                         ${captionHtml}
