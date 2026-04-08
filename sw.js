@@ -6,15 +6,11 @@ const ASSETS_TO_CACHE = [
   './icon.svg'
 ];
 
-let sharedFile = null; // مخزن مؤقت لحفظ الملف القادم من الواتساب
+let sharedFile = null;
 
 self.addEventListener('install', (e) => {
-  self.skipWaiting(); // تفعيل التحديثات فوراً
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
+  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)));
 });
 
 self.addEventListener('activate', (e) => {
@@ -22,46 +18,51 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // 1. التقاط طلبات المشاركة القادمة من الواتساب والنظام
   if (e.request.method === 'POST' && e.request.url.includes('share-target')) {
-    e.respondWith(
-      (async () => {
-        try {
-          // استخراج الملف من الطلب
-          const formData = await e.request.formData();
-          const file = formData.get('shared_file');
+    e.respondWith((async () => {
+      try {
+        const formData = await e.request.formData();
+        const file = formData.get('shared_file');
 
-          if (file) {
-            sharedFile = file; // حفظ الملف في الذاكرة المؤقتة (الأمانات)
+        if (file) {
+          sharedFile = file;
+          
+          // 1. إرسال رسالة فورية لجميع النوافذ المفتوحة (عشان لو التطبيق مفتوح أصلاً)
+          const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+          let appClient = null;
+
+          for (const client of clients) {
+            // نحاول نلاقي النافذة اللي شغالة كـ "تطبيق مستقل" (أفضلية)
+            if ('focused' in client) {
+               appClient = client;
+               break; 
+            }
           }
 
-          // إعادة التوجيه لفتح التطبيق (الصفحة الرئيسية)
-          return Response.redirect('./', 303);
-        } catch (error) {
-          console.error('Share Target Error:', error);
-          return Response.redirect('./', 303);
+          if (appClient) {
+              appClient.focus(); // إجبار الموبايل يعرض نافذة التطبيق
+              appClient.postMessage({ type: 'FILE_SHARED_FROM_OS', file: sharedFile });
+              sharedFile = null;
+          }
         }
-      })()
-    );
-    return; // إنهاء التنفيذ هنا
+
+        // 2. إعادة توجيه (عشان لو مفيش ولا نافذة مفتوحة، تفتح من جديد)
+        return Response.redirect('./', 303);
+      } catch (error) {
+        console.error('Share Error:', error);
+        return Response.redirect('./', 303);
+      }
+    })());
+    return;
   }
 
-  // 2. الكود الأساسي: يخبر المتصفح أن التطبيق جاهز للعمل بدون إنترنت (الكاش)
-  e.respondWith(
-    fetch(e.request).catch(() => {
-      return caches.match(e.request);
-    })
-  );
+  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
 });
 
-// 3. دالة التسليم: لما التطبيق يفتح (index.html) هيبعت رسالة يطلب فيها الملف
+// 3. لو التطبيق فتح جديد (بعد الـ Redirect) بيسأل على الملف
 self.addEventListener('message', (event) => {
   if (event.data.type === 'CHECK_FOR_SHARED_FILE' && sharedFile) {
-    // تسليم الملف للتطبيق ليعرضه في مربع المعاينة
-    event.source.postMessage({ 
-      type: 'FILE_SHARED_FROM_OS', 
-      file: sharedFile 
-    });
-    sharedFile = null; // تفريغ المخزن بعد التسليم بنجاح
+    event.source.postMessage({ type: 'FILE_SHARED_FROM_OS', file: sharedFile });
+    sharedFile = null;
   }
 });
