@@ -28,20 +28,21 @@
             --input-bg: #f3f4f6;
         }
 
+        /* ================= تحسين الوضع الليلي ================= */
         body.dark-theme {
             --primary-color: #3b82f6;
             --primary-dark: #2563eb;
-            --bg-color: #0f172a; 
-            --chat-bg: #1e293b;  
-            --text-color: #f8fafc; 
-            --card-bg: #1e293b;    
-            --border-color: #334155; 
-            --hover-bg: #334155;
-            --msg-me-bg: #3b82f6;
+            --bg-color: #121212;     /* أسود عميق للخلفية */
+            --chat-bg: #0a0a0a;      /* أسود داكن جداً لمنطقة الشات */
+            --text-color: #e4e6eb;   /* أبيض مريح للعين */
+            --card-bg: #18191a;      /* لون القوائم والهيدر */
+            --border-color: #3a3b3c; /* خطوط فاصلة هادئة */
+            --hover-bg: #242526;
+            --msg-me-bg: #1e40af;    /* أزرق ليلي أنيق لرسائلك */
             --msg-me-text: #ffffff;
-            --msg-other-bg: #334155; 
-            --msg-other-text: #f8fafc;
-            --input-bg: #0f172a;
+            --msg-other-bg: #242526; /* رمادي داكن مريح لرسائل الطرف الآخر */
+            --msg-other-text: #e4e6eb;
+            --input-bg: #242526;     /* لون مربع الكتابة */
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; transition: background-color 0.3s, border-color 0.3s; }
@@ -125,8 +126,20 @@
         #clear-chat-btn { background: none; border: none; color: #ef4444; font-size: 18px; cursor: pointer; padding: 8px; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center; opacity: 0.7;}
         #clear-chat-btn:hover { background: rgba(239, 68, 68, 0.1); opacity: 1; transform: scale(1.1);}
 
-        /* ================= ستايل التمرير والمحادثة ================= */
+        /* ستايل دائرة التحميل للرسائل المرفوعة */
+        .temp-msg-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center;
+            border-radius: 12px; z-index: 10; backdrop-filter: blur(2px);
+        }
+        .dark-theme .temp-msg-overlay { background: rgba(0,0,0,0.6); }
+        .temp-spinner { font-size: 30px; color: var(--primary-color); animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
         .chat-messages { flex: 1; padding: 60px 20px 20px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; z-index: 1; background-image: radial-gradient(var(--border-color) 1px, transparent 1px); background-size: 20px 20px; }
+        /* تحسين نقاط الخلفية في الوضع الليلي لتكون هادئة */
+        .dark-theme .chat-messages { background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px); }
+
         .chat-messages::-webkit-scrollbar { width: 6px; }
         .chat-messages::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 10px; }
         
@@ -145,16 +158,6 @@
         .msg-bubble a { color: var(--primary-color); text-decoration: underline; font-weight: bold;}
         .msg-me a { color: #dbeafe; }
         .dark-theme .msg-other a { color: #60a5fa; }
-
-        /* ================= دائرة التحميل للرسالة (التعديل الجديد) ================= */
-        .temp-msg-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center;
-            border-radius: 12px; z-index: 10; backdrop-filter: blur(2px);
-        }
-        .dark-theme .temp-msg-overlay { background: rgba(0,0,0,0.7); }
-        .temp-spinner { font-size: 30px; color: var(--primary-color); animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
         
         /* مشغل يوتيوب */
         .yt-preview { position: relative; width: 100%; max-width: 320px; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; margin-top: 10px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -186,7 +189,6 @@
         .msg-menu button:hover { background: var(--hover-bg); color: var(--primary-color); }
         .msg-menu .delete-btn:hover { color: #ef4444; background: rgba(239, 68, 68, 0.05); }
 
-        /* تعديل التفاعلات لمنع القص */
         .reaction-menu { 
             display: none; position: absolute; top: -45px; 
             background: var(--card-bg); box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
@@ -221,7 +223,6 @@
         .input-wrapper { flex: 1; display: flex; align-items: flex-end; background: var(--input-bg); border-radius: 24px; padding: 5px 10px; transition: 0.3s; min-height: 45px; border: 1px solid transparent; }
         .input-wrapper:focus-within { border-color: var(--primary-color); background: var(--card-bg); }
         
-        /* إخفاء سكرول الإدخال مع بقاء التمرير */
         .chat-input { flex: 1; padding: 10px 5px; border: none; background: transparent; outline: none; font-size: 15px; color: var(--text-color); resize: none; max-height: 100px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
         .chat-input::-webkit-scrollbar { display: none; }
         
@@ -401,13 +402,10 @@
     </div>
 
     <script>
-        // تسجيل الـ Service Worker وإرسال رسالة تطلب أي ملفات معلقة من المشاركة
+        // تسجيل الـ Service Worker لضمان عمل PWA ومشاركة الملفات
         if ('serviceWorker' in navigator) { 
             navigator.serviceWorker.register('./sw.js', { scope: './' })
-            .then(reg => {
-                console.log("Service Worker Registered!");
-                if (reg.active) reg.active.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
-            })
+            .then(() => console.log("Service Worker Registered!"))
             .catch(() => console.log("Service Worker Failed")); 
         }
         let deferredPrompt;
@@ -477,7 +475,8 @@
         let currentMessagesRefPath = ''; 
         let currentListeners = [], typingListener = null, replyingToMsg = null;
         window.pendingUnreadMessages = [];
-        window.uploadingKeys = []; // لتتبع الرسائل التي يتم رفعها لتفادي التكرار
+        window.uploadingKeys = []; 
+        window.pendingAttachment = null; 
 
         const loginScreen = document.getElementById('login-screen'), appContainer = document.getElementById('app-container');
         const chatMessages = document.getElementById('chat-messages'), msgInput = document.getElementById('msg-input');
@@ -599,7 +598,6 @@
             if (myRole === 'admin') { document.getElementById('admin-panel-btn').style.display = 'block'; }
             registerInFirebase(); listenForNotifications('messages_global', 'global', 'global'); switchChat('global', 'المجموعة العامة');
             
-            // تحقق من وجود ملفات تم مشاركتها قبل الدخول
             if (window.pendingSharedFile) {
                 setTimeout(() => {
                     showAttachmentPreview(window.pendingSharedFile.file, window.pendingSharedFile.result);
@@ -742,7 +740,6 @@
                 const file = event.data.file; if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى 3 ميجابايت."); 
                 const reader = new FileReader(); 
                 reader.onload = e => {
-                    // إذا كان الشات مفتوح، اعرض المعاينة فوراً، وإلا احفظه للفتح القادم
                     if(document.getElementById('app-container').style.display === 'flex') showAttachmentPreview(file, e.target.result);
                     else window.pendingSharedFile = { file: file, result: e.target.result };
                 }; 
@@ -756,21 +753,17 @@
             set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: true }); clearTimeout(window.typingTimeout); window.typingTimeout = setTimeout(() => set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }), 1500);
         });
 
-        // ================= الإرسال المدمج بدون تكرار (Latency Compensation Fix) =================
+        // ================= الإرسال المدمج (بدون تكرار) مع إغلاق الكيبورد وتمرير الشاشة =================
         function sendMessage(dataObj) {
             if(!currentMessagesRefPath) return; 
             dataObj.name = myName; dataObj.timestamp = Date.now(); if(replyingToMsg) dataObj.replyTo = replyingToMsg;
             
-            // توليد الـ Key الحقيقي للرسالة قبل إرسالها لفايربيز
             const newRef = push(ref(db, currentMessagesRefPath));
             const msgKey = newRef.key;
             
-            // إضافة الـ Key لقائمة "جاري الرفع" لتظهر دائرة التحميل فوق الرسالة بمجرد عرضها
             if (dataObj.type === 'file' || dataObj.type === 'audio') { window.uploadingKeys.push(msgKey); }
             
-            // الرفع لفايربيز
             set(newRef, dataObj).then(() => {
-                // عند الانتهاء، إزالة العلامة ومسح غطاء التحميل برفق
                 if(window.uploadingKeys.includes(msgKey)) {
                     window.uploadingKeys = window.uploadingKeys.filter(k => k !== msgKey);
                     const overlay = document.getElementById('overlay-' + msgKey); if(overlay) overlay.remove();
@@ -797,8 +790,15 @@
                 }
                 msgInput.value = ''; 
                 msgInput.style.height = 'auto';
-                msgInput.blur(); // إخفاء الكيبورد فوراً
-                setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 150); // تمرير سلس للأسفل
+                
+                // إغلاق الكيبورد فوراً
+                msgInput.blur(); 
+                
+                // تمرير ناعم ومضمون لأسفل الشاشة بعد الإرسال وإغلاق الكيبورد
+                setTimeout(() => { 
+                    const chatBox = document.getElementById('chat-messages');
+                    chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' }); 
+                }, 200);
             }
         });
         msgInput.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('send-btn').click(); } });
@@ -828,13 +828,11 @@
             return formattedText;
         }
 
-        // رسم الرسائل وتغطيتها بدائرة تحميل إن كانت قيد الرفع
         function renderMsg(msgKey, msgObj, isMe) {
             const div = document.createElement('div'); div.id = 'msg-' + msgKey; div.className = `msg-bubble ${isMe ? 'msg-me' : 'msg-other'}`;
             let htmlContent = '', textExcerptForReply = '', safeContentToCopy = ''; 
             let quoteHtml = ''; if(msgObj.replyTo) quoteHtml = `<div class="quoted-msg" onclick="prepareReply('${msgObj.name}', '${msgObj.content ? 'نص' : 'مرفق'}')"><strong>${msgObj.replyTo.name}</strong><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${msgObj.replyTo.text}</div></div>`;
 
-            // هل الرسالة تحتاج إظهار التغطية الشفافة للتحميل؟
             let overlayHtml = (window.uploadingKeys && window.uploadingKeys.includes(msgKey)) ? `<div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div>` : '';
 
             if (msgObj.type === 'text') { 
@@ -892,18 +890,49 @@
 
             div.innerHTML = `${actionsHtml}${reactMenuHtml}${!isMe ? `<span class="sender-name">${msgObj.name}</span>` : ''}${quoteHtml}<div>${htmlContent}</div><div class="msg-meta">${timeStr} ${readStatusHtml}</div><div class="reactions-display hidden" id="reactions-display-${msgKey}"></div>`;
             chatMessages.appendChild(div); 
-            // تمرير ناعم عند استلام رسالة أو إرسالها لتفادي تعليق الشاشة
-            setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 150);
+            
+            // تمرير ناعم ومضمون
+            setTimeout(() => { 
+                const chatBox = document.getElementById('chat-messages');
+                chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' }); 
+            }, 150);
+
             if (msgObj.reactions) updateReactionsUI(msgKey, msgObj.reactions);
 
-            let touchStartX = 0, touchStartY = 0, pressTimer;
+            // ================= تعديل خوارزمية السحب لمنع الرد العشوائي =================
+            let touchStartX = 0, touchStartY = 0, pressTimer, isSwiping = false;
             const startPress = (e) => { 
                 if(e.target.closest('a') || e.target.closest('.yt-preview') || e.target.closest('video') || e.target.closest('.media-download-btn')) return; 
-                if(e.touches) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; } 
+                if(e.touches) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; isSwiping = false; } 
                 pressTimer = setTimeout(() => { toggleReactMenu(msgKey); if (navigator.vibrate) navigator.vibrate(50); }, 500); 
             };
             const cancelPress = () => { clearTimeout(pressTimer); };
-            div.addEventListener('touchstart', startPress, {passive: true}); div.addEventListener('touchend', e => { cancelPress(); let diffX = e.changedTouches ? e.changedTouches[0].clientX - touchStartX : 0; if (Math.abs(diffX) > 50) { prepareReply(msgObj.name, textExcerptForReply); } div.style.transform = `translateX(0)`; }); div.addEventListener('touchmove', e => { let diffX = e.touches[0].clientX - touchStartX; let diffY = e.touches[0].clientY - touchStartY; if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) cancelPress(); if ((isMe && diffX < -30) || (!isMe && diffX > 30)) { div.style.transform = `translateX(${diffX}px)`; } }, {passive: true});
+            
+            div.addEventListener('touchstart', startPress, {passive: true}); 
+            
+            div.addEventListener('touchend', e => { 
+                cancelPress(); 
+                if (!isSwiping) return; // لن ينفذ الرد إلا إذا كان سحباً حقيقياً
+                let diffX = e.changedTouches ? e.changedTouches[0].clientX - touchStartX : 0; 
+                if (Math.abs(diffX) > 80) { prepareReply(msgObj.name, textExcerptForReply); } // يجب سحب مسافة كبيرة (80 بكسل)
+                div.style.transform = `translateX(0)`; 
+                setTimeout(() => isSwiping = false, 100);
+            }); 
+            
+            div.addEventListener('touchmove', e => { 
+                let diffX = e.touches[0].clientX - touchStartX; 
+                let diffY = e.touches[0].clientY - touchStartY; 
+                if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) cancelPress(); 
+                
+                // تفعيل السحب فقط إذا كانت الحركة أفقية وليست رأسية
+                if (Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+                    isSwiping = true;
+                    if ((isMe && diffX < -30) || (!isMe && diffX > 30)) { 
+                        div.style.transform = `translateX(${diffX}px)`; 
+                    }
+                }
+            }, {passive: true});
+            
             div.addEventListener('mousedown', startPress); div.addEventListener('mouseup', cancelPress); div.addEventListener('mouseleave', cancelPress);
         }
     </script>
