@@ -25,28 +25,10 @@ self.addEventListener('fetch', (e) => {
         const file = formData.get('shared_file');
 
         if (file) {
-          sharedFile = file;
-          
-          // 1. إرسال رسالة فورية لجميع النوافذ المفتوحة (عشان لو التطبيق مفتوح أصلاً)
-          const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-          let appClient = null;
-
-          for (const client of clients) {
-            // نحاول نلاقي النافذة اللي شغالة كـ "تطبيق مستقل" (أفضلية)
-            if ('focused' in client) {
-               appClient = client;
-               break; 
-            }
-          }
-
-          if (appClient) {
-              appClient.focus(); // إجبار الموبايل يعرض نافذة التطبيق
-              appClient.postMessage({ type: 'FILE_SHARED_FROM_OS', file: sharedFile });
-              sharedFile = null;
-          }
+          sharedFile = file; // 1. حفظ الملف في جيب الحارس (الذاكرة)
         }
 
-        // 2. إعادة توجيه (عشان لو مفيش ولا نافذة مفتوحة، تفتح من جديد)
+        // 2. إعادة توجيه صامتة لفتح التطبيق بدون أي إرسال عشوائي
         return Response.redirect('./', 303);
       } catch (error) {
         console.error('Share Error:', error);
@@ -59,10 +41,13 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
 });
 
-// 3. لو التطبيق فتح جديد (بعد الـ Redirect) بيسأل على الملف
+// 3. لما التطبيق (index.html) يفتح، هيبعت يسأل عن الملف
 self.addEventListener('message', (event) => {
-  if (event.data.type === 'CHECK_FOR_SHARED_FILE' && sharedFile) {
-    event.source.postMessage({ type: 'FILE_SHARED_FROM_OS', file: sharedFile });
-    sharedFile = null;
+  if (event.data.type === 'CHECK_FOR_SHARED_FILE') {
+    if (sharedFile) {
+      // 4. تسليم الملف للنافذة اللي سألت فقط! (التطبيق)
+      event.source.postMessage({ type: 'FILE_SHARED_FROM_OS', file: sharedFile });
+      sharedFile = null; // تفريغ الذاكرة بعد التسليم
+    }
   }
 });
