@@ -125,17 +125,7 @@
         #clear-chat-btn { background: none; border: none; color: #ef4444; font-size: 18px; cursor: pointer; padding: 8px; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center; opacity: 0.7;}
         #clear-chat-btn:hover { background: rgba(239, 68, 68, 0.1); opacity: 1; transform: scale(1.1);}
 
-        /* ستايل دائرة التحميل للرسائل المرفوعة */
-        .temp-msg-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center;
-            border-radius: 12px; z-index: 10; backdrop-filter: blur(2px);
-        }
-        .dark-theme .temp-msg-overlay { background: rgba(0,0,0,0.7); }
-        .temp-spinner { font-size: 30px; color: var(--primary-color); animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* تعديل padding-top لضمان عدم قص مربع التفاعلات في أول رسالة */
+        /* ================= ستايل التمرير والمحادثة ================= */
         .chat-messages { flex: 1; padding: 60px 20px 20px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; z-index: 1; background-image: radial-gradient(var(--border-color) 1px, transparent 1px); background-size: 20px 20px; }
         .chat-messages::-webkit-scrollbar { width: 6px; }
         .chat-messages::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 10px; }
@@ -155,6 +145,16 @@
         .msg-bubble a { color: var(--primary-color); text-decoration: underline; font-weight: bold;}
         .msg-me a { color: #dbeafe; }
         .dark-theme .msg-other a { color: #60a5fa; }
+
+        /* ================= دائرة التحميل للرسالة (التعديل الجديد) ================= */
+        .temp-msg-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center;
+            border-radius: 12px; z-index: 10; backdrop-filter: blur(2px);
+        }
+        .dark-theme .temp-msg-overlay { background: rgba(0,0,0,0.7); }
+        .temp-spinner { font-size: 30px; color: var(--primary-color); animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
         
         /* مشغل يوتيوب */
         .yt-preview { position: relative; width: 100%; max-width: 320px; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; margin-top: 10px; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -186,14 +186,13 @@
         .msg-menu button:hover { background: var(--hover-bg); color: var(--primary-color); }
         .msg-menu .delete-btn:hover { color: #ef4444; background: rgba(239, 68, 68, 0.05); }
 
-        /* ================= تعديل مربع التفاعلات لمنع القص ================= */
+        /* تعديل التفاعلات لمنع القص */
         .reaction-menu { 
             display: none; position: absolute; top: -45px; 
             background: var(--card-bg); box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
             border-radius: 25px; padding: 5px 10px; z-index: 100; 
             border: 1px solid var(--border-color); gap: 8px; width: max-content; 
         }
-        /* فتح المربع للداخل لعدم الخروج عن الشاشة */
         .msg-me .reaction-menu { right: 0; left: auto; animation: popUpReact 0.2s ease-out; }
         .msg-other .reaction-menu { left: 0; right: auto; animation: popUpReact 0.2s ease-out; }
         .reaction-menu.show { display: flex; }
@@ -402,10 +401,13 @@
     </div>
 
     <script>
-        // تسجيل الـ Service Worker لضمان عمل PWA ومشاركة الملفات
+        // تسجيل الـ Service Worker وإرسال رسالة تطلب أي ملفات معلقة من المشاركة
         if ('serviceWorker' in navigator) { 
             navigator.serviceWorker.register('./sw.js', { scope: './' })
-            .then(() => console.log("Service Worker Registered!"))
+            .then(reg => {
+                console.log("Service Worker Registered!");
+                if (reg.active) reg.active.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
+            })
             .catch(() => console.log("Service Worker Failed")); 
         }
         let deferredPrompt;
@@ -475,7 +477,7 @@
         let currentMessagesRefPath = ''; 
         let currentListeners = [], typingListener = null, replyingToMsg = null;
         window.pendingUnreadMessages = [];
-        window.pendingAttachment = null; 
+        window.uploadingKeys = []; // لتتبع الرسائل التي يتم رفعها لتفادي التكرار
 
         const loginScreen = document.getElementById('login-screen'), appContainer = document.getElementById('app-container');
         const chatMessages = document.getElementById('chat-messages'), msgInput = document.getElementById('msg-input');
@@ -596,6 +598,14 @@
             document.getElementById('my-name-display').innerText = myName; document.getElementById('my-avatar').innerText = myName.charAt(0).toUpperCase();
             if (myRole === 'admin') { document.getElementById('admin-panel-btn').style.display = 'block'; }
             registerInFirebase(); listenForNotifications('messages_global', 'global', 'global'); switchChat('global', 'المجموعة العامة');
+            
+            // تحقق من وجود ملفات تم مشاركتها قبل الدخول
+            if (window.pendingSharedFile) {
+                setTimeout(() => {
+                    showAttachmentPreview(window.pendingSharedFile.file, window.pendingSharedFile.result);
+                    window.pendingSharedFile = null;
+                }, 800);
+            }
         }
 
         function timeAgo(timestamp) {
@@ -726,10 +736,17 @@
         });
 
         // استقبال الملفات من المشاركة (واتساب وغيره)
+        window.pendingSharedFile = null;
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data.type === 'FILE_SHARED_FROM_OS' && event.data.file) {
-                const file = event.data.file; if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى 3 ميجابايت."); if (!currentMessagesRefPath) return alert("افتح محادثة أولاً!");
-                const reader = new FileReader(); reader.onload = e => showAttachmentPreview(file, e.target.result); reader.readAsDataURL(file);
+                const file = event.data.file; if (file.size > 3 * 1024 * 1024) return alert("الحد الأقصى 3 ميجابايت."); 
+                const reader = new FileReader(); 
+                reader.onload = e => {
+                    // إذا كان الشات مفتوح، اعرض المعاينة فوراً، وإلا احفظه للفتح القادم
+                    if(document.getElementById('app-container').style.display === 'flex') showAttachmentPreview(file, e.target.result);
+                    else window.pendingSharedFile = { file: file, result: e.target.result };
+                }; 
+                reader.readAsDataURL(file);
             }
         });
 
@@ -739,36 +756,29 @@
             set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: true }); clearTimeout(window.typingTimeout); window.typingTimeout = setTimeout(() => set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }), 1500);
         });
 
-        // ================= الإرسال بدائرة التحميل المدمجة =================
-        function renderTempMsg(tempId, msgObj) {
-            const div = document.createElement('div'); div.id = tempId; div.className = `msg-bubble msg-me`;
-            div.style.opacity = '0.7'; let htmlContent = '';
-            
-            if (msgObj.type === 'file') {
-                if (msgObj.content.startsWith('data:image/')) htmlContent = `<div style="position:relative;"><img src="${msgObj.content}" class="image-preview"><div class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
-                else if (msgObj.content.startsWith('data:video/')) htmlContent = `<div style="position:relative;"><video src="${msgObj.content}" style="max-width:100%; border-radius:12px;"></video><div class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
-                else htmlContent = `<div style="position:relative; padding:10px;"><div class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName}</div></div><div class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
-            } else if (msgObj.type === 'audio') {
-                htmlContent = `<div style="position:relative;"><div class="custom-audio-player"><button class="play-btn"><i class="fa-solid fa-play"></i></button><div class="audio-progress"></div><div class="audio-time">${msgObj.durationText}</div></div><div class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
-            }
-
-            let captionHtml = msgObj.caption ? `<div style="margin-top:8px; font-size:14px;">${msgObj.caption}</div>` : '';
-            div.innerHTML = `<div>${htmlContent}</div>${captionHtml}<div class="msg-meta">جاري الإرسال... <i class="fa-regular fa-clock"></i></div>`;
-            document.getElementById('chat-messages').appendChild(div); 
-            setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 100);
-        }
-
+        // ================= الإرسال المدمج بدون تكرار (Latency Compensation Fix) =================
         function sendMessage(dataObj) {
             if(!currentMessagesRefPath) return; 
             dataObj.name = myName; dataObj.timestamp = Date.now(); if(replyingToMsg) dataObj.replyTo = replyingToMsg;
             
-            const tempId = 'temp-' + Date.now();
-            if (dataObj.type === 'file' || dataObj.type === 'audio') { renderTempMsg(tempId, dataObj); }
+            // توليد الـ Key الحقيقي للرسالة قبل إرسالها لفايربيز
+            const newRef = push(ref(db, currentMessagesRefPath));
+            const msgKey = newRef.key;
             
-            push(ref(db, currentMessagesRefPath), dataObj).then(() => {
-                const tempEl = document.getElementById(tempId); if(tempEl) tempEl.remove();
+            // إضافة الـ Key لقائمة "جاري الرفع" لتظهر دائرة التحميل فوق الرسالة بمجرد عرضها
+            if (dataObj.type === 'file' || dataObj.type === 'audio') { window.uploadingKeys.push(msgKey); }
+            
+            // الرفع لفايربيز
+            set(newRef, dataObj).then(() => {
+                // عند الانتهاء، إزالة العلامة ومسح غطاء التحميل برفق
+                if(window.uploadingKeys.includes(msgKey)) {
+                    window.uploadingKeys = window.uploadingKeys.filter(k => k !== msgKey);
+                    const overlay = document.getElementById('overlay-' + msgKey); if(overlay) overlay.remove();
+                }
             }).catch(err => {
-                const tempEl = document.getElementById(tempId); if(tempEl) tempEl.remove(); alert("حدث خطأ أثناء الإرسال!");
+                window.uploadingKeys = window.uploadingKeys.filter(k => k !== msgKey);
+                const overlay = document.getElementById('overlay-' + msgKey); if(overlay) overlay.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; font-size:30px;"></i>';
+                alert("حدث خطأ أثناء الإرسال!");
             });
 
             const roomID = currentChatMode === 'global' ? 'global' : (myUserId < currentChatTargetId ? `${myUserId}_${currentChatTargetId}` : `${currentChatTargetId}_${myUserId}`);
@@ -787,8 +797,8 @@
                 }
                 msgInput.value = ''; 
                 msgInput.style.height = 'auto';
-                msgInput.blur(); // إغلاق الكيبورد
-                setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 150);
+                msgInput.blur(); // إخفاء الكيبورد فوراً
+                setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 150); // تمرير سلس للأسفل
             }
         });
         msgInput.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('send-btn').click(); } });
@@ -818,10 +828,14 @@
             return formattedText;
         }
 
+        // رسم الرسائل وتغطيتها بدائرة تحميل إن كانت قيد الرفع
         function renderMsg(msgKey, msgObj, isMe) {
             const div = document.createElement('div'); div.id = 'msg-' + msgKey; div.className = `msg-bubble ${isMe ? 'msg-me' : 'msg-other'}`;
             let htmlContent = '', textExcerptForReply = '', safeContentToCopy = ''; 
             let quoteHtml = ''; if(msgObj.replyTo) quoteHtml = `<div class="quoted-msg" onclick="prepareReply('${msgObj.name}', '${msgObj.content ? 'نص' : 'مرفق'}')"><strong>${msgObj.replyTo.name}</strong><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${msgObj.replyTo.text}</div></div>`;
+
+            // هل الرسالة تحتاج إظهار التغطية الشفافة للتحميل؟
+            let overlayHtml = (window.uploadingKeys && window.uploadingKeys.includes(msgKey)) ? `<div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div>` : '';
 
             if (msgObj.type === 'text') { 
                 htmlContent = processTextForLinks(msgObj.content); 
@@ -833,7 +847,10 @@
                 
                 if (msgObj.content.startsWith('data:image/')) { 
                     htmlContent = `
-                        <img src="${msgObj.content}" class="image-preview" onclick="openLightbox(this.src)">
+                        <div style="position:relative;">
+                            <img src="${msgObj.content}" class="image-preview" onclick="openLightbox(this.src)">
+                            ${overlayHtml}
+                        </div>
                         ${captionHtml}
                         <div style="display:flex; justify-content:flex-start; margin-top: 5px;">
                             <a href="${msgObj.content}" download="${msgObj.fileName || 'image.png'}" class="media-download-btn"><i class="fa-solid fa-download"></i> تحميل الصورة</a>
@@ -843,7 +860,10 @@
                 } 
                 else if (msgObj.content.startsWith('data:video/')) {
                     htmlContent = `
-                        <video src="${msgObj.content}" controls playsinline webkit-playsinline style="max-width: 100%; border-radius: 12px; margin-top: 5px; border: 1px solid var(--border-color); background: #000;"></video>
+                        <div style="position:relative;">
+                            <video src="${msgObj.content}" controls playsinline webkit-playsinline style="max-width: 100%; border-radius: 12px; margin-top: 5px; border: 1px solid var(--border-color); background: #000;"></video>
+                            ${overlayHtml}
+                        </div>
                         ${captionHtml}
                         <div style="display:flex; justify-content:flex-start; margin-top: 5px;">
                             <a href="${msgObj.content}" download="${msgObj.fileName || 'video.mp4'}" class="media-download-btn"><i class="fa-solid fa-download"></i> تحميل الفيديو</a>
@@ -852,11 +872,17 @@
                     textExcerptForReply = '🎥 فيديو' + (msgObj.caption ? ` - ${msgObj.caption}` : '');
                 }
                 else { 
-                    htmlContent = `<a href="${msgObj.content}" download="${msgObj.fileName}" class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName}</div></a> ${captionHtml}`; 
+                    htmlContent = `
+                        <div style="position:relative;">
+                            <a href="${msgObj.content}" download="${msgObj.fileName}" class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName}</div></a> 
+                            ${overlayHtml}
+                        </div>
+                        ${captionHtml}
+                    `; 
                     textExcerptForReply = '📁 ملف'; 
                 } 
             } 
-            else if (msgObj.type === 'audio') { const audioId = 'audio-' + msgKey; const durationText = msgObj.durationText || '00:00'; htmlContent = `<div class="custom-audio-player"><button class="play-btn" onclick="toggleAudio('${audioId}')"><i class="fa-solid fa-play" id="icon-${audioId}"></i></button><div class="audio-progress"><div class="progress-bar" id="progress-${audioId}"></div></div><div class="audio-time" id="time-${audioId}" data-duration="${durationText}">${durationText}</div><audio id="${audioId}" src="${msgObj.content}" style="display:none;" ontimeupdate="updateAudioProgress('${audioId}')" onended="audioEnded('${audioId}')"></audio></div>`; textExcerptForReply = '🎤 صوت'; }
+            else if (msgObj.type === 'audio') { const audioId = 'audio-' + msgKey; const durationText = msgObj.durationText || '00:00'; htmlContent = `<div style="position:relative;"><div class="custom-audio-player"><button class="play-btn" onclick="toggleAudio('${audioId}')"><i class="fa-solid fa-play" id="icon-${audioId}"></i></button><div class="audio-progress"><div class="progress-bar" id="progress-${audioId}"></div></div><div class="audio-time" id="time-${audioId}" data-duration="${durationText}">${durationText}</div><audio id="${audioId}" src="${msgObj.content}" style="display:none;" ontimeupdate="updateAudioProgress('${audioId}')" onended="audioEnded('${audioId}')"></audio></div>${overlayHtml}</div>`; textExcerptForReply = '🎤 صوت'; }
 
             const showDeleteBtn = isMe || myRole === 'admin';
             let actionsHtml = `<div class="msg-options" onclick="toggleMsgMenu('${msgKey}'); event.stopPropagation();"><i class="fa-solid fa-ellipsis-vertical"></i><div class="msg-menu" id="menu-${msgKey}"><button onclick="prepareReply('${msgObj.name}', '${textExcerptForReply}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-reply"></i> رد</button>${msgObj.type === 'text' ? `<button onclick="copyMsgText('${safeContentToCopy}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-copy"></i> نسخ</button>` : ''}${showDeleteBtn ? `<button class="delete-btn" onclick="deleteMsg('${msgKey}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-trash"></i> حذف للجميع</button>` : ''}</div></div>`;
@@ -866,7 +892,8 @@
 
             div.innerHTML = `${actionsHtml}${reactMenuHtml}${!isMe ? `<span class="sender-name">${msgObj.name}</span>` : ''}${quoteHtml}<div>${htmlContent}</div><div class="msg-meta">${timeStr} ${readStatusHtml}</div><div class="reactions-display hidden" id="reactions-display-${msgKey}"></div>`;
             chatMessages.appendChild(div); 
-            setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 100);
+            // تمرير ناعم عند استلام رسالة أو إرسالها لتفادي تعليق الشاشة
+            setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 150);
             if (msgObj.reactions) updateReactionsUI(msgKey, msgObj.reactions);
 
             let touchStartX = 0, touchStartY = 0, pressTimer;
