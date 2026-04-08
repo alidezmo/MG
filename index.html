@@ -28,7 +28,6 @@
             --input-bg: #f3f4f6;
         }
 
-        /* ================= تحسين الوضع الليلي ================= */
         body.dark-theme {
             --primary-color: #3b82f6;
             --primary-dark: #2563eb;
@@ -126,7 +125,6 @@
         #clear-chat-btn { background: none; border: none; color: #ef4444; font-size: 18px; cursor: pointer; padding: 8px; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center; opacity: 0.7;}
         #clear-chat-btn:hover { background: rgba(239, 68, 68, 0.1); opacity: 1; transform: scale(1.1);}
 
-        /* ستايل دائرة التحميل للرسائل المرفوعة */
         .temp-msg-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center;
@@ -166,10 +164,16 @@
             text-decoration: none !important; padding: 6px 12px; border-radius: 8px;
             font-size: 12px; font-weight: bold; margin-top: 5px; transition: 0.2s;
             border: 1px solid rgba(0,0,0,0.1); width: fit-content;
+            cursor: pointer;
         }
         .msg-me .media-download-btn { background: rgba(255,255,255,0.2); color: white; border-color: rgba(255,255,255,0.3); }
         .dark-theme .msg-other .media-download-btn { background: rgba(255,255,255,0.05); color: var(--text-color); border-color: rgba(255,255,255,0.1); }
         .media-download-btn:hover { background: var(--primary-color) !important; color: white !important; transform: translateY(-2px); }
+
+        /* ستايل المرفقات كملفات */
+        .file-box { background: rgba(0,0,0,0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1); margin-top: 5px; position: relative; }
+        .dark-theme .msg-other .file-box { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+        .msg-me .file-box { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); }
 
         .msg-options { position: absolute; top: 8px; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; transition: 0.2s; z-index: 10; opacity: 0.3; }
         .msg-me .msg-options { right: 5px; left: auto; color: white; }
@@ -243,14 +247,6 @@
         .msg-me .progress-bar { background: white; }
         .audio-time { font-size: 12px; font-weight: bold; min-width: 35px; text-align: center; color: inherit; }
 
-        /* ستايل المرفقات للفتح المباشر */
-        .file-attachment { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.05); padding: 12px; border-radius: 12px; margin-top: 5px; text-decoration: none; color: inherit; border: 1px solid rgba(0,0,0,0.1); cursor: pointer; transition: 0.3s; }
-        .dark-theme .msg-other .file-attachment { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
-        .file-attachment i { font-size: 24px; color: var(--primary-color); transition: 0.3s; }
-        .msg-me .file-attachment i { color: white; }
-        .file-attachment:hover { background: rgba(0,0,0,0.1); }
-        .dark-theme .msg-other .file-attachment:hover { background: rgba(255,255,255,0.1); }
-        
         #lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(5px); }
         .lightbox-close-btn { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; font-size: 20px; cursor: pointer; z-index: 10000; transition: 0.2s;}
         .lightbox-close-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
@@ -432,7 +428,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getDatabase, ref, push, onValue, set, update, remove, onDisconnect, off, query, limitToLast, onChildAdded, onChildRemoved, onChildChanged, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-        // ================= إعدادات Cloudinary الخاصة بك =================
         const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/daoenc5dp/auto/upload";
         const CLOUDINARY_UPLOAD_PRESET = "Mg_home_preset";
 
@@ -766,12 +761,16 @@
             
             if (msgObj.type === 'file') {
                 const fName = (msgObj.fileName || '').toLowerCase();
-                const isImg = msgObj.content.startsWith('data:image/') || fName.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
-                const isVid = msgObj.content.startsWith('data:video/') || fName.match(/\.(mp4|webm|ogg|mov)$/i);
+                const isPdf = fName.endsWith('.pdf');
+                const isDoc = fName.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$/i);
+                const isFile = isPdf || isDoc;
+                
+                const isImg = !isFile && (msgObj.content.startsWith('data:image/') || fName.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i) || msgObj.content.includes('/image/upload/'));
+                const isVid = !isFile && (msgObj.content.startsWith('data:video/') || fName.match(/\.(mp4|webm|ogg|mov)$/i) || msgObj.content.includes('/video/upload/'));
                 
                 if (isImg) htmlContent = `<div style="position:relative;"><img src="${msgObj.content}" class="image-preview"><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
                 else if (isVid) htmlContent = `<div style="position:relative;"><video src="${msgObj.content}" style="max-width:100%; border-radius:12px;"></video><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
-                else htmlContent = `<div style="position:relative; padding:10px;"><div class="file-attachment"><i class="fa-solid fa-file"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msgObj.fileName}</div></div><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
+                else htmlContent = `<div style="position:relative;" class="file-box"><div style="display:flex; align-items:center; gap:10px;"><i class="fa-solid ${isPdf ? 'fa-file-pdf' : 'fa-file'}" style="font-size:30px; color:${isPdf ? '#ef4444' : 'var(--primary-color)'};"></i> <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; font-weight:bold;">${msgObj.fileName}</div></div><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
             } else if (msgObj.type === 'audio') {
                 htmlContent = `<div style="position:relative;"><div class="custom-audio-player"><button class="play-btn"><i class="fa-solid fa-play"></i></button><div class="audio-progress"></div><div class="audio-time">${msgObj.durationText}</div></div><div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div></div>`;
             }
@@ -914,12 +913,19 @@
             else if (msgObj.type === 'file') { 
                 let captionHtml = msgObj.caption ? `<div style="margin-top:8px; font-size:14px;">${processTextForLinks(msgObj.caption)}</div>` : '';
                 
-                // رابط مباشر يفتح الـ PDF والملفات في المتصفح فوراً (بدون target="_blank" للـ PWA)
-                let directUrl = msgObj.content;
+                let viewUrl = msgObj.content;
+                let downloadUrl = msgObj.content;
+                if (downloadUrl.includes('cloudinary.com') && downloadUrl.includes('/upload/')) {
+                    downloadUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
+                }
 
                 const fName = (msgObj.fileName || '').toLowerCase();
-                const isImg = msgObj.content.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i) || msgObj.content.startsWith('data:image/') || msgObj.content.includes('/image/upload/');
-                const isVid = msgObj.content.match(/\.(mp4|webm|ogg|mov)$/i) || msgObj.content.startsWith('data:video/') || msgObj.content.includes('/video/upload/');
+                const isPdf = fName.endsWith('.pdf');
+                const isDoc = fName.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$/i);
+                const isFile = isPdf || isDoc;
+
+                const isImg = !isFile && (msgObj.content.startsWith('data:image/') || fName.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i) || msgObj.content.includes('/image/upload/'));
+                const isVid = !isFile && (msgObj.content.startsWith('data:video/') || fName.match(/\.(mp4|webm|ogg|mov)$/i) || msgObj.content.includes('/video/upload/'));
 
                 if (isImg) { 
                     htmlContent = `
@@ -929,7 +935,7 @@
                         </div>
                         ${captionHtml}
                         <div style="display:flex; justify-content:flex-start; margin-top: 5px;">
-                            <a href="${directUrl}" class="media-download-btn"><i class="fa-solid fa-up-right-from-square"></i> عرض الصورة</a>
+                            <a href="${viewUrl}" target="_blank" class="media-download-btn"><i class="fa-solid fa-up-right-from-square"></i> عرض الصورة</a>
                         </div>
                     `; 
                     textExcerptForReply = '📷 صورة' + (msgObj.caption ? ` - ${msgObj.caption}` : ''); 
@@ -942,22 +948,25 @@
                         </div>
                         ${captionHtml}
                         <div style="display:flex; justify-content:flex-start; margin-top: 5px;">
-                            <a href="${directUrl}" class="media-download-btn"><i class="fa-solid fa-up-right-from-square"></i> عرض الفيديو</a>
+                            <a href="${viewUrl}" target="_blank" class="media-download-btn"><i class="fa-solid fa-up-right-from-square"></i> عرض الفيديو</a>
                         </div>
                     `;
                     textExcerptForReply = '🎥 فيديو' + (msgObj.caption ? ` - ${msgObj.caption}` : '');
                 }
                 else { 
-                    // ================= فتح مباشر في المتصفح بنقرة واحدة =================
                     htmlContent = `
-                        <div style="position:relative;">
-                            <a href="${directUrl}" class="file-attachment">
-                                <i class="fa-solid fa-file"></i> 
-                                <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height: 1.3; flex: 1;">
+                        <div class="file-box">
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom: 10px;">
+                                <i class="fa-solid ${isPdf ? 'fa-file-pdf' : 'fa-file'}" style="font-size:30px; color: ${isPdf ? '#ef4444' : 'var(--primary-color)'};"></i>
+                                <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; font-weight:bold; font-size:14px; line-height: 1.4;">
                                     ${msgObj.fileName || 'ملف مرفق'}
                                 </div>
-                            </a> 
+                            </div>
                             ${overlayHtml}
+                            <div style="display:flex; gap: 8px;">
+                                <a href="${viewUrl}" target="_blank" class="media-download-btn" style="flex:1; justify-content:center; background:var(--primary-color) !important; color:white !important; border:none;"><i class="fa-solid fa-eye"></i> عرض</a>
+                                <a href="${downloadUrl}" download="${msgObj.fileName}" class="media-download-btn" style="flex:1; justify-content:center;"><i class="fa-solid fa-download"></i> تحميل</a>
+                            </div>
                         </div>
                         ${captionHtml}
                     `; 
@@ -988,39 +997,6 @@
 
             let touchStartX = 0, touchStartY = 0, pressTimer, isSwiping = false;
             const startPress = (e) => { 
-                // استثناء الضغط على المرفقات عشان يفتح براحته
-                if(e.target.closest('a') || e.target.closest('.yt-preview') || e.target.closest('video') || e.target.closest('.media-download-btn') || e.target.closest('.file-attachment')) return; 
+                if(e.target.closest('a') || e.target.closest('.yt-preview') || e.target.closest('video') || e.target.closest('.media-download-btn') || e.target.closest('.file-box')) return; 
                 if(e.touches) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; isSwiping = false; } 
-                pressTimer = setTimeout(() => { toggleReactMenu(msgKey); if (navigator.vibrate) navigator.vibrate(50); }, 500); 
-            };
-            const cancelPress = () => { clearTimeout(pressTimer); };
-            
-            div.addEventListener('touchstart', startPress, {passive: true}); 
-            
-            div.addEventListener('touchend', e => { 
-                cancelPress(); 
-                if (!isSwiping) return; 
-                let diffX = e.changedTouches ? e.changedTouches[0].clientX - touchStartX : 0; 
-                if (Math.abs(diffX) > 80) { prepareReply(msgObj.name, textExcerptForReply); } 
-                div.style.transform = `translateX(0)`; 
-                setTimeout(() => isSwiping = false, 100);
-            }); 
-            
-            div.addEventListener('touchmove', e => { 
-                let diffX = e.touches[0].clientX - touchStartX; 
-                let diffY = e.touches[0].clientY - touchStartY; 
-                if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) cancelPress(); 
-                
-                if (Math.abs(diffX) > Math.abs(diffY) * 1.5) {
-                    isSwiping = true;
-                    if ((isMe && diffX < -30) || (!isMe && diffX > 30)) { 
-                        div.style.transform = `translateX(${diffX}px)`; 
-                    }
-                }
-            }, {passive: true});
-            
-            div.addEventListener('mousedown', startPress); div.addEventListener('mouseup', cancelPress); div.addEventListener('mouseleave', cancelPress);
-        }
-    </script>
-</body>
-</html>
+                pressTimer = setTimeout(() => { toggleReactMenu(msgKey); if (navigator.vibrate) navigator.vibrate(5
