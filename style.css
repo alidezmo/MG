@@ -154,6 +154,10 @@ body { background: var(--bg-color); display: flex; justify-content: center; alig
 .dark-theme .msg-other .media-download-btn { background: rgba(255,255,255,0.05); color: var(--text-color); border-color: rgba(255,255,255,0.1); }
 .media-download-btn:hover { background: var(--primary-color) !important; color: white !important; transform: translateY(-2px); }
 
+.file-box { background: rgba(0,0,0,0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1); margin-top: 5px; position: relative; }
+.dark-theme .msg-other .file-box { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+.msg-me .file-box { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); }
+
 .msg-options { position: absolute; top: 8px; width: 26px; height: 26px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; transition: 0.2s; z-index: 10; opacity: 0.3; }
 .msg-me .msg-options { right: 5px; left: auto; color: white; }
 .msg-other .msg-options { left: 5px; right: auto; color: var(--text-color); }
