@@ -525,6 +525,12 @@ function renderMsg(msgKey, msgObj, isMe) {
         const isDoc = fName.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$/i);
         const isFile = isPdf || isDoc;
 
+        // --- السحر هنا: استخدام عارض جوجل للملفات على الموبايل والكمبيوتر ---
+        if ((isPdf || isDoc) && !fName.match(/\.(zip|rar)$/i)) {
+            // تحويل الرابط ليعمل عبر عارض جوجل بدلاً من التحميل الإجباري
+            viewUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(msgObj.content)}`;
+        }
+
         const isImg = !isFile && (msgObj.content.startsWith('data:image/') || fName.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i) || msgObj.content.includes('/image/upload/'));
         const isVid = !isFile && (msgObj.content.startsWith('data:video/') || fName.match(/\.(mp4|webm|ogg|mov)$/i) || msgObj.content.includes('/video/upload/'));
 
@@ -536,7 +542,7 @@ function renderMsg(msgKey, msgObj, isMe) {
                 </div>
                 ${captionHtml}
                 <div style="display:flex; justify-content:flex-start; margin-top: 5px;">
-                    <a href="${viewUrl}" target="_blank" class="media-download-btn"><i class="fa-solid fa-up-right-from-square"></i> عرض الصورة</a>
+                    <a href="${downloadUrl}" download="${msgObj.fileName || 'image.png'}" class="media-download-btn"><i class="fa-solid fa-download"></i> تحميل الصورة</a>
                 </div>
             `; 
             textExcerptForReply = '📷 صورة' + (msgObj.caption ? ` - ${msgObj.caption}` : ''); 
@@ -549,7 +555,7 @@ function renderMsg(msgKey, msgObj, isMe) {
                 </div>
                 ${captionHtml}
                 <div style="display:flex; justify-content:flex-start; margin-top: 5px;">
-                    <a href="${viewUrl}" target="_blank" class="media-download-btn"><i class="fa-solid fa-up-right-from-square"></i> عرض الفيديو</a>
+                    <a href="${downloadUrl}" download="${msgObj.fileName || 'video.mp4'}" class="media-download-btn"><i class="fa-solid fa-download"></i> تحميل الفيديو</a>
                 </div>
             `;
             textExcerptForReply = '🎥 فيديو' + (msgObj.caption ? ` - ${msgObj.caption}` : '');
