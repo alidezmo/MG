@@ -199,7 +199,7 @@ function handleIncomingNotification(msg, roomType, targetId) {
 
 function listenForNotifications(roomRefPath, roomType, targetId) {
     if (trackedRooms.has(roomRefPath)) return; trackedRooms.add(roomRefPath);
-    onChildAdded(query(ref(db, roomRefPath), limitToLast(1)), snapshot => handleIncomingNotification(snapshot.val(), roomType, targetId));
+    onChildAdded(query(ref(db, roomRefPath), limitToLast(100)), snapshot => handleIncomingNotification(snapshot.val(), roomType, targetId));
 }
 
 function startApp() {
@@ -628,8 +628,7 @@ function renderMsg(msgKey, msgObj, isMe) {
         }
     }, {passive: true});
     
-    div.addEventListener('mousedown', startPress); div.addEventListener('mouseup', cancelPress); div.addEventListener('mouseleave', cancelPress);
+    div.addEventListener('mousedown', startPress); 
+    div.addEventListener('mouseup', cancelPress); 
+    div.addEventListener('mouseleave', cancelPress);
 }
-    </script>
-</body>
-</html>
