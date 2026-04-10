@@ -209,37 +209,51 @@ function startApp() {
     if (myRole === 'admin') { document.getElementById('admin-panel-btn').style.display = 'block'; }
     registerInFirebase(); listenForNotifications('messages_global', 'global', 'global'); switchChat('global', 'المجموعة العامة');
 
-   window.OneSignalDeferred = window.OneSignalDeferred || [];
+    // إعداد OneSignal
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
             appId: "c89a2d04-de43-42eb-85b3-2f45c47b6b08",
             safari_web_id: "web.onesignal.auto.1afe2633-50cf-455e-8f3e-a50d8cbe1d12",
-            // السطرين دول هما اللي بيربطوا OneSignal بملف sw.js بتاعك
+            // السطرين دول هما السر عشان OneSignal ميتخانقش مع ملف sw.js بتاعك
             serviceWorkerParam: { scope: "./" },
             serviceWorkerPath: "sw.js" 
         });
         
+        // تسجيل الدخول المبدئي وتمرير الـ ID بتاع اليوزر
         OneSignal.login(myUserId);
 
+        // التحقق: لو المستخدم لسه مخدش قرار (يعني الحالة default)، نظهر المربع المخصص بتاعنا
         const permission = OneSignal.Notifications.permission;
         if (permission !== "granted" && permission !== "denied") {
             document.getElementById('notification-prompt-modal').style.display = 'flex';
         }
     });
 }
-// أزرار المربع المنبثق للإشعارات
+
+// ================= أزرار المربع المنبثق للإشعارات =================
 document.getElementById('allow-notif-btn').addEventListener('click', () => {
-    // نخفي المربع بتاعنا
+    // 1. نخفي المربع بتاعنا أول ما يدوس
     document.getElementById('notification-prompt-modal').style.display = 'none';
     
-    // نطلب الصلاحية بالطريقة الصحيحة لـ OneSignal v16
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    // 2. نكلم OneSignal ونطلب منه يطلّع رسالة المتصفح الأصلية
     window.OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.Notifications.requestPermission();
+        
+        // 3. التريكة: لو اليوزر داس "سماح (Allow)" في رسالة المتصفح، نأكد الربط فوراً
+        if (OneSignal.Notifications.permission === "granted") {
+            OneSignal.login(myUserId); // تأكيد ربط الموبايل بالحساب
+            
+            // إشعار داخلي شيك لتأكيد النجاح
+            setTimeout(() => {
+                showInAppToast('النظام', 'تم تفعيل الإشعارات بنجاح! 🔔', 'global', 'system');
+            }, 1000);
+        }
     });
 });
 
 document.getElementById('deny-notif-btn').addEventListener('click', () => {
+    // لو رفض، نخفي المربع وخلاص
     document.getElementById('notification-prompt-modal').style.display = 'none';
 });
 
