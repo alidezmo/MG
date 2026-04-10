@@ -208,17 +208,21 @@ function startApp() {
     if (myRole === 'admin') { document.getElementById('admin-panel-btn').style.display = 'block'; }
     registerInFirebase(); listenForNotifications('messages_global', 'global', 'global'); switchChat('global', 'المجموعة العامة');
     
-    // تفعيل OneSignal وربطه بحساب المستخدم الحالي
+   // تفعيل OneSignal وطلب الصلاحية فوراً
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
             appId: "c89a2d04-de43-42eb-85b3-2f45c47b6b08",
             safari_web_id: "web.onesignal.auto.1afe2633-50cf-455e-8f3e-a50d8cbe1d12",
+            // إظهار زرار الجرس الصغير تحت
             notifyButton: { enable: true },
-            serviceWorkerParam: { scope: "./" },
-            serviceWorkerPath: "sw.js" // إجبار OneSignal على استخدام الحارس بتاعنا
         });
-        OneSignal.login(myUserId); // ربط الموبايل باليوزر ده عشان يوصله الإشعار الخاص
+        
+        // ربط الموبايل باليوزر ده عشان يوصله الإشعار الخاص
+        OneSignal.login(myUserId); 
+        
+        // السطر السحري اللي هيطلع رسالة طلب الصلاحية للمستخدم أول ما يفتح الشات
+        OneSignal.Slidedown.promptPush(); 
     });
 }
 
