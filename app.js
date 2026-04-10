@@ -207,6 +207,19 @@ function startApp() {
     document.getElementById('my-name-display').innerText = myName; document.getElementById('my-avatar').innerText = myName.charAt(0).toUpperCase();
     if (myRole === 'admin') { document.getElementById('admin-panel-btn').style.display = 'block'; }
     registerInFirebase(); listenForNotifications('messages_global', 'global', 'global'); switchChat('global', 'المجموعة العامة');
+    
+    // تفعيل OneSignal وربطه بحساب المستخدم الحالي
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+            appId: "c89a2d04-de43-42eb-85b3-2f45c47b6b08",
+            safari_web_id: "web.onesignal.auto.1afe2633-50cf-455e-8f3e-a50d8cbe1d12",
+            notifyButton: { enable: true },
+            serviceWorkerParam: { scope: "./" },
+            serviceWorkerPath: "sw.js" // إجبار OneSignal على استخدام الحارس بتاعنا
+        });
+        OneSignal.login(myUserId); // ربط الموبايل باليوزر ده عشان يوصله الإشعار الخاص
+    });
 }
 
 function timeAgo(timestamp) {
@@ -382,6 +395,34 @@ function renderTempMsg(msgKey, msgObj) {
     setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 100);
 }
 
+// ================= نظام الإشعارات الحقيقية (OneSignal) =================
+function sendRealPushNotification(targetId, title, message) {
+    const REST_API_KEY = "os_v2_app_zcnc2bg6inboxbntf5c4i63lbahjebt6rpyesuushnigpfbyqp3vzbcoeyd7blnpj6zjwt2e6vqedjf3wdy226rvvgbkx4natfamufa"; 
+    
+    if (!REST_API_KEY) return;
+
+    const data = {
+        app_id: "c89a2d04-de43-42eb-85b3-2f45c47b6b08",
+        headings: { "en": title, "ar": title },
+        contents: { "en": message, "ar": message },
+    };
+
+    if (targetId === 'global') {
+        data.included_segments = ["Subscribed Users"]; 
+    } else {
+        data.include_aliases = { external_id: [targetId] }; 
+    }
+
+    fetch("https://onesignal.com/api/v1/notifications", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Authorization": "Basic " + REST_API_KEY
+        },
+        body: JSON.stringify(data)
+    }).catch(e => console.log("Push Error", e));
+}
+
 async function sendMessage(dataObj) {
     if(!currentMessagesRefPath) return; 
     dataObj.name = myName; dataObj.timestamp = Date.now(); if(replyingToMsg) dataObj.replyTo = replyingToMsg;
@@ -423,6 +464,12 @@ async function sendMessage(dataObj) {
 
     const roomID = currentChatMode === 'global' ? 'global' : (myUserId < currentChatTargetId ? `${myUserId}_${currentChatTargetId}` : `${currentChatTargetId}_${myUserId}`);
     set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }); window.cancelReply(); 
+
+    // استدعاء إشعار الموبايل الحقيقي
+    let pushText = dataObj.type === 'text' ? dataObj.content : (dataObj.type === 'audio' ? '🎤 رسالة صوتية' : '📁 ملف مرفق');
+    let targetForPush = currentChatMode === 'global' ? 'global' : currentChatTargetId;
+    sendRealPushNotification(targetForPush, myName, pushText);
+            
     msgInput.style.height = 'auto';
 }
 
@@ -525,9 +572,7 @@ function renderMsg(msgKey, msgObj, isMe) {
         const isDoc = fName.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$/i);
         const isFile = isPdf || isDoc;
 
-        // --- السحر هنا: استخدام عارض جوجل للملفات على الموبايل والكمبيوتر ---
         if ((isPdf || isDoc) && !fName.match(/\.(zip|rar)$/i)) {
-            // تحويل الرابط ليعمل عبر عارض جوجل بدلاً من التحميل الإجباري
             viewUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(msgObj.content)}`;
         }
 
