@@ -13,5 +13,10 @@ export const state = {
     pendingAttachment: null,
     appStartTime: Date.now(),
     unreadCounts: { global: 0 },
-    trackedRooms: new Set()
+    trackedRooms: new Set(),
+    
+    // --- متغيرات التمرير اللانهائي (الجديدة) ---
+    oldestMessageKey: null, // مفتاح أقدم رسالة تم تحميلها
+    isLoadingMore: false,   // لمنع تكرار التحميل إذا كان يحمل بالفعل
+    allMessagesLoaded: false // للتحقق مما إذا كانت قاعدة البيانات قد انتهت
 };
