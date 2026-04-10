@@ -171,7 +171,13 @@ window.loadUsersList = function() {
 };
 
 const appStartTime = Date.now(); let unreadCounts = { global: 0 }; let trackedRooms = new Set(); 
-function playNotificationSound() { document.getElementById('notification-sound').play().catch(()=>{}); }
+function playNotificationSound() { 
+    const snd = document.getElementById('notification-sound');
+    if(snd) {
+        snd.currentTime = 0;
+        snd.play().catch(()=>{}); 
+    }
+}
 
 function showInAppToast(name, text, roomType, targetId) {
     const container = document.getElementById('toast-container'); if(!container) return;
@@ -292,7 +298,10 @@ window.switchChat = function(mode, title, targetId = null) {
         // --- ميزة تشغيل صوت عند الاستقبال ---
         if (msg.name !== myName && msg.timestamp > appStartTime) {
             const receiveSound = document.getElementById('sound-received');
-            if(receiveSound) receiveSound.play().catch(()=>{});
+            if(receiveSound) {
+                receiveSound.currentTime = 0;
+                receiveSound.play().catch(()=>{});
+            }
         }
 
         if (msg.name !== myName && currentChatMode === 'private' && (!msg.readBy || !msg.readBy[myUserId])) {
@@ -417,15 +426,15 @@ msgInput.addEventListener('input', function() {
 // ================= صندوق الإيموجي =================
 const emojiBtn = document.getElementById('emoji-btn');
 const emojiPickerContainer = document.getElementById('emoji-picker-container');
-const emojiPicker = document.querySelector('emoji-picker');
 
-if (emojiBtn && emojiPickerContainer && emojiPicker) {
+if (emojiBtn && emojiPickerContainer) {
     emojiBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation(); 
         emojiPickerContainer.style.display = emojiPickerContainer.style.display === 'none' ? 'block' : 'none';
     });
 
-    emojiPicker.addEventListener('emoji-click', event => {
+    document.addEventListener('emoji-click', event => {
         msgInput.value += event.detail.unicode;
         msgInput.style.height = 'auto'; 
         msgInput.style.height = (msgInput.scrollHeight) + 'px'; 
@@ -555,14 +564,20 @@ document.getElementById('send-btn').addEventListener('click', () => {
                 rawFile: window.pendingAttachment.fileObj, 
                 caption: text 
             });
-            window.cancelAttachment();
         } else {
             sendMessage({ type: 'text', content: text }); 
         }
         
-        // --- ميزة تشغيل صوت عند الإرسال ---
+        // --- الإخفاء الفوري لصندوق الرد والمرفق ---
+        window.cancelReply();
+        window.cancelAttachment();
+
+        // --- تشغيل صوت عند الإرسال ---
         const sendSound = document.getElementById('sound-sent');
-        if(sendSound) sendSound.play().catch(()=>{});
+        if(sendSound) {
+            sendSound.currentTime = 0;
+            sendSound.play().catch(()=>{});
+        }
 
         msgInput.value = ''; 
         msgInput.style.height = 'auto';
