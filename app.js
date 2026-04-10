@@ -45,8 +45,8 @@ window.OneSignalDeferred = window.OneSignalDeferred || [];
             appId: "c89a2d04-de43-42eb-85b3-2f45c47b6b08", 
             safari_web_id: "web.onesignal.auto.1afe2633-50cf-455e-8f3e-a50d8cbe1d12", 
             
-            // الحل السليم: نبدأ المسار بشرطة مائلة / ليفهم أنه بعد الدومين مباشرة
-            serviceWorkerPath: "/MG/sw.js",
+            // 👇 السر هنا: كتابة MG مباشرة بدون (/) في البداية!
+            serviceWorkerPath: "MG/sw.js",
             serviceWorkerParam: { scope: "/MG/" }
         });
         
