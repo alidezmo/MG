@@ -209,20 +209,20 @@ function startApp() {
     if (myRole === 'admin') { document.getElementById('admin-panel-btn').style.display = 'block'; }
     registerInFirebase(); listenForNotifications('messages_global', 'global', 'global'); switchChat('global', 'المجموعة العامة');
 
-    // إعداد OneSignal وطلب الصلاحية عن طريق النافذة المنبثقة
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
+   window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
             appId: "c89a2d04-de43-42eb-85b3-2f45c47b6b08",
             safari_web_id: "web.onesignal.auto.1afe2633-50cf-455e-8f3e-a50d8cbe1d12",
+            // السطرين دول هما اللي بيربطوا OneSignal بملف sw.js بتاعك
+            serviceWorkerParam: { scope: "./" },
+            serviceWorkerPath: "sw.js" 
         });
         
         OneSignal.login(myUserId);
 
-        // التحقق: هل المستخدم مفعل الإشعارات؟
         const permission = OneSignal.Notifications.permission;
         if (permission !== "granted" && permission !== "denied") {
-            // إظهار المربع المخصص الخاص بنا لطلب الإذن
             document.getElementById('notification-prompt-modal').style.display = 'flex';
         }
     });
