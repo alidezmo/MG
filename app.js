@@ -3,7 +3,8 @@ import { getDatabase, ref, push, onValue, set, update, remove, onDisconnect, que
 
 // ================= تسجيل الـ Service Worker =================
 if ('serviceWorker' in navigator) { 
-    navigator.serviceWorker.register('./sw.js', { scope: './' })
+    // قمنا بمسح { scope: './' } من هنا
+    navigator.serviceWorker.register('sw.js') 
     .then(reg => {
         console.log("Service Worker Registered!");
         navigator.serviceWorker.ready.then((registration) => {
@@ -12,13 +13,12 @@ if ('serviceWorker' in navigator) {
             }
         });
     })
-    .catch(() => console.log("Service Worker Failed")); 
+    .catch((err) => console.log("Service Worker Failed", err)); 
     
     if (navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
     }
 }
-
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault(); deferredPrompt = e;
