@@ -202,29 +202,43 @@ function listenForNotifications(roomRefPath, roomType, targetId) {
     onChildAdded(query(ref(db, roomRefPath), limitToLast(100)), snapshot => handleIncomingNotification(snapshot.val(), roomType, targetId));
 }
 
+// ================= بداية التطبيق والتحقق من الإشعارات =================
 function startApp() {
     loginScreen.style.display = 'none'; appContainer.style.display = 'flex';
     document.getElementById('my-name-display').innerText = myName; document.getElementById('my-avatar').innerText = myName.charAt(0).toUpperCase();
     if (myRole === 'admin') { document.getElementById('admin-panel-btn').style.display = 'block'; }
     registerInFirebase(); listenForNotifications('messages_global', 'global', 'global'); switchChat('global', 'المجموعة العامة');
-    
-   // تفعيل OneSignal وطلب الصلاحية فوراً
+
+    // إعداد OneSignal وطلب الصلاحية عن طريق النافذة المنبثقة
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
             appId: "c89a2d04-de43-42eb-85b3-2f45c47b6b08",
             safari_web_id: "web.onesignal.auto.1afe2633-50cf-455e-8f3e-a50d8cbe1d12",
-            // إظهار زرار الجرس الصغير تحت
-            notifyButton: { enable: true },
         });
         
-        // ربط الموبايل باليوزر ده عشان يوصله الإشعار الخاص
-        OneSignal.login(myUserId); 
-        
-        // السطر السحري اللي هيطلع رسالة طلب الصلاحية للمستخدم أول ما يفتح الشات
-        OneSignal.Slidedown.promptPush(); 
+        OneSignal.login(myUserId);
+
+        // التحقق: هل المستخدم مفعل الإشعارات؟
+        const permission = OneSignal.Notifications.permission;
+        if (permission !== "granted" && permission !== "denied") {
+            // إظهار المربع المخصص الخاص بنا لطلب الإذن
+            document.getElementById('notification-prompt-modal').style.display = 'flex';
+        }
     });
 }
+
+// أزرار المربع المنبثق للإشعارات
+document.getElementById('allow-notif-btn').addEventListener('click', () => {
+    document.getElementById('notification-prompt-modal').style.display = 'none';
+    window.OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.Notifications.requestPermission();
+    });
+});
+
+document.getElementById('deny-notif-btn').addEventListener('click', () => {
+    document.getElementById('notification-prompt-modal').style.display = 'none';
+});
 
 function timeAgo(timestamp) {
     if (!timestamp) return 'غير متصل';
@@ -399,7 +413,7 @@ function renderTempMsg(msgKey, msgObj) {
     setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 100);
 }
 
-// ================= نظام الإشعارات الحقيقية (OneSignal) =================
+// ================= دالة إرسال الإشعارات החقيقية =================
 function sendRealPushNotification(targetId, title, message) {
     const REST_API_KEY = "os_v2_app_zcnc2bg6inboxbntf5c4i63lbahjebt6rpyesuushnigpfbyqp3vzbcoeyd7blnpj6zjwt2e6vqedjf3wdy226rvvgbkx4natfamufa"; 
     
@@ -469,11 +483,11 @@ async function sendMessage(dataObj) {
     const roomID = currentChatMode === 'global' ? 'global' : (myUserId < currentChatTargetId ? `${myUserId}_${currentChatTargetId}` : `${currentChatTargetId}_${myUserId}`);
     set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }); window.cancelReply(); 
 
-    // استدعاء إشعار الموبايل الحقيقي
+    // إرسال الإشعار بعد تسجيل الرسالة في الداتابيز
     let pushText = dataObj.type === 'text' ? dataObj.content : (dataObj.type === 'audio' ? '🎤 رسالة صوتية' : '📁 ملف مرفق');
     let targetForPush = currentChatMode === 'global' ? 'global' : currentChatTargetId;
     sendRealPushNotification(targetForPush, myName, pushText);
-            
+
     msgInput.style.height = 'auto';
 }
 
