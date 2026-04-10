@@ -227,8 +227,7 @@ function startApp() {
         }
     });
 }
-
-// أزرار المربع المنبثق للإشعارات (الكود الأصلي الناجح)
+// أزرار المربع المنبثق للإشعارات
 document.getElementById('allow-notif-btn').addEventListener('click', async () => {
     // نخفي المربع بتاعنا
     document.getElementById('notification-prompt-modal').style.display = 'none';
