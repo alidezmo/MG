@@ -15,11 +15,11 @@ export const state = {
     unreadCounts: { global: 0 },
     trackedRooms: new Set(),
     
-    // متغيرات التمرير اللانهائي
-    oldestMessageKey: null,
-    isLoadingMore: false,
-    allMessagesLoaded: false, // <-- الفاصلة هنا كانت هي سبب المشكلة!
+    // --- متغيرات التمرير اللانهائي (الجديدة) ---
+    oldestMessageKey: null, // مفتاح أقدم رسالة تم تحميلها
+    isLoadingMore: false,   // لمنع تكرار التحميل إذا كان يحمل بالفعل
+    allMessagesLoaded: false,
+
+    totalUsers: 0
     
-    // عدد المستخدمين
-    totalUsers: 0 
 };
