@@ -18,5 +18,8 @@ export const state = {
     // --- متغيرات التمرير اللانهائي (الجديدة) ---
     oldestMessageKey: null, // مفتاح أقدم رسالة تم تحميلها
     isLoadingMore: false,   // لمنع تكرار التحميل إذا كان يحمل بالفعل
-    allMessagesLoaded: false // للتحقق مما إذا كانت قاعدة البيانات قد انتهت
+    allMessagesLoaded: false
+
+    totalUsers: 0
+    
 };
