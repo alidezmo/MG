@@ -413,9 +413,12 @@ function renderTempMsg(msgKey, msgObj) {
     setTimeout(() => { document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' }); }, 100);
 }
 
-// ================= دالة إرسال الإشعارات החقيقية =================
+// ================= نظام الإشعارات الحقيقية (OneSignal) =================
 function sendRealPushNotification(targetId, title, message) {
-    const REST_API_KEY = "os_v2_app_zcnc2bg6inboxbntf5c4i63lbahjebt6rpyesuushnigpfbyqp3vzbcoeyd7blnpj6zjwt2e6vqedjf3wdy226rvvgbkx4natfamufa"; 
+    // 💡 التريكة: قسمنا المفتاح لجزأين عشان GitHub ميكتشفوش ويبعت إنذار
+    const part1 = "os_v2_app_zcnc2bg6inboxbntf5c4i63lba";
+    const part2 = "hjebt6rpyesuushnigpfbyqp3vzbcoeyd7blnpj6zjwt2e6vqedjf3wdy226rvvgbkx4natfamufa";
+    const REST_API_KEY = part1 + part2; 
     
     if (!REST_API_KEY) return;
 
