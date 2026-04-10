@@ -1,7 +1,7 @@
 importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
-// تم تحديث رقم الإصدار لضمان تحديث الملفات لدى المستخدمين
-const CACHE_NAME = 'mg-home-v4.2';
+// تم تحديث رقم الإصدار لضمان تحديث الملفات لدى المستخدمين (الإصدار الخامس)
+const CACHE_NAME = 'mg-home-v4.4';
 
 // تمت إضافة جميع ملفات التطبيق الأساسية والصوتية لتعمل بدون إنترنت
 const ASSETS_TO_CACHE = [
@@ -28,6 +28,7 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  // 1. ميزة المشاركة (Share Target)
   if (e.request.method === 'POST' && e.request.url.includes('share-target')) {
     e.respondWith((async () => {
       try {
@@ -35,10 +36,10 @@ self.addEventListener('fetch', (e) => {
         const file = formData.get('shared_file');
 
         if (file) {
-          sharedFile = file; // 1. حفظ الملف في جيب الحارس (الذاكرة)
+          sharedFile = file; // حفظ الملف في جيب الحارس (الذاكرة)
         }
 
-        // 2. إعادة توجيه صامتة لفتح التطبيق بدون أي إرسال عشوائي
+        // إعادة توجيه صامتة لفتح التطبيق بدون أي إرسال عشوائي
         return Response.redirect('./', 303);
       } catch (error) {
         console.error('Share Error:', error);
@@ -48,7 +49,23 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+  // 2. الحل السحري: تجاهل أي طلبات POST أو استدعاءات API خارجية (مثل OneSignal)
+  if (e.request.method !== 'GET') {
+      return; // دع المتصفح يتعامل معها بشكل طبيعي ولا تتدخل يا حارس
+  }
+
+  // 3. للطلبات العادية: حاول جلبها من الإنترنت، وإن فشلت اجلبها من الكاش
+  e.respondWith(
+      fetch(e.request).catch(() => {
+          return caches.match(e.request).then((response) => {
+              if (response) {
+                  return response;
+              }
+              // إذا لم تكن في الكاش أيضاً، أعد استجابة فارغة بدلاً من إحداث خطأ
+              return new Response('', { status: 404, statusText: 'Not Found' });
+          });
+      })
+  );
 });
 
 // 3. لما التطبيق (index.html) يفتح، هيبعت يسأل عن الملف
