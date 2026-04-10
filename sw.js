@@ -1,7 +1,7 @@
 importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
 // تم تحديث رقم الإصدار لضمان تحديث الملفات لدى المستخدمين (الإصدار الخامس)
-const CACHE_NAME = 'mg-home-v4.4';
+const CACHE_NAME = 'mg-home-v4.5';
 
 // تمت إضافة جميع ملفات التطبيق الأساسية والصوتية لتعمل بدون إنترنت
 const ASSETS_TO_CACHE = [
@@ -9,6 +9,12 @@ const ASSETS_TO_CACHE = [
   './index.html',
   './style.css',
   './app.js',
+  './firebase-config.js',
+  './state.js',
+  './ui.js',
+  './auth.js',
+  './chat.js',
+  './media.js',
   './manifest.json',
   './icon.svg',
   './notification-sound.wav',
