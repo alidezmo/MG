@@ -40,13 +40,14 @@ window.startApp = function() {
 
   window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
-        // 👇 هذا السطر السحري يكتشف مسار مجلدك على GitHub تلقائياً (سواء كان اسمه MG أو غيره)
-        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        // 👇 هذا الكود يجلب الرابط الكامل للموقع (مثال: https://alidezmo.github.io/MG/)
+        const currentUrl = window.location.href.split('?')[0].split('#')[0]; // تنظيف الرابط
+        const basePath = currentUrl.endsWith('/') ? currentUrl : currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1);
 
         await OneSignal.init({ 
             appId: "c89a2d04-de43-42eb-85b3-2f45c47b6b08", 
             safari_web_id: "web.onesignal.auto.1afe2633-50cf-455e-8f3e-a50d8cbe1d12", 
-            // 👇 نوجه OneSignal للمسار الصحيح
+            // 👇 نوجه OneSignal للمسار الكامل بشكل صريح لا يقبل الخطأ
             serviceWorkerPath: basePath + "sw.js",
             serviceWorkerParam: { scope: basePath }
         });
