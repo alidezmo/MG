@@ -229,11 +229,14 @@ function startApp() {
 }
 
 // أزرار المربع المنبثق للإشعارات
-document.getElementById('allow-notif-btn').addEventListener('click', () => {
+document.getElementById('allow-notif-btn').addEventListener('click', async () => {
+    // نخفي المربع بتاعنا
     document.getElementById('notification-prompt-modal').style.display = 'none';
-    window.OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.Notifications.requestPermission();
-    });
+    
+    // نطلب الصلاحية من المتصفح مباشرة وبدون تأخير
+    if (window.OneSignal) {
+        await window.OneSignal.Notifications.requestPermission();
+    }
 });
 
 document.getElementById('deny-notif-btn').addEventListener('click', () => {
