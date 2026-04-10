@@ -267,3 +267,14 @@ input[type="file"] { display: none; }
     0% { transform: scale(1.02); background-color: rgba(37, 99, 235, 0.15); box-shadow: 0 0 15px rgba(37, 99, 235, 0.4); border-color: var(--primary-color); }
     100% { transform: scale(1); background-color: inherit; box-shadow: none; border-color: transparent; }
 }
+
+
+.is-offline #chat-header {
+    border-bottom: 3px solid #ef4444;
+}
+.is-offline::before {
+    content: "لا يوجد اتصال بالإنترنت";
+    position: fixed; top: 0; left: 0; width: 100%;
+    background: #ef4444; color: white; text-align: center;
+    font-size: 12px; z-index: 999999; padding: 2px 0;
+}
