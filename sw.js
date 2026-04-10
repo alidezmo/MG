@@ -1,11 +1,19 @@
 importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
-const CACHE_NAME = 'mg-home-v2.1';
+// تم تحديث رقم الإصدار لضمان تحديث الملفات لدى المستخدمين
+const CACHE_NAME = 'mg-home-v4';
+
+// تمت إضافة جميع ملفات التطبيق الأساسية والصوتية لتعمل بدون إنترنت
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './style.css',
+  './app.js',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  './notification-sound.wav',
+  './sound-sent.mp4',
+  './sound-received.mp3'
 ];
 
 let sharedFile = null;
