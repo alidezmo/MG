@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, set, update, remove, onDisconnect, query, limitToLast, onChildAdded, onChildRemoved, onChildChanged, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+import { getDatabase, ref, push, onValue, set, update, remove, onDisconnect, query, limitToLast, onChildAdded, onChildRemoved, onChildChanged, get, orderByKey, endBefore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
 export const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/daoenc5dp/auto/upload";
 export const CLOUDINARY_UPLOAD_PRESET = "Mg_home_preset";
@@ -16,4 +16,5 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
-export { ref, push, onValue, set, update, remove, onDisconnect, query, limitToLast, onChildAdded, onChildRemoved, onChildChanged, get };
+// لاحظ أننا أضفنا orderByKey و endBefore هنا في التصدير
+export { ref, push, onValue, set, update, remove, onDisconnect, query, limitToLast, onChildAdded, onChildRemoved, onChildChanged, get, orderByKey, endBefore };
