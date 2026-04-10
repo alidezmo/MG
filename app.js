@@ -58,7 +58,12 @@ function registerInFirebase() {
     const myUserRef = ref(db, 'users/' + state.myUserId); const connectedRef = ref(db, '.info/connected');
     onValue(connectedRef, snap => { if (snap.val() === true) { update(myUserRef, { name: state.myName, userId: state.myUserId, online: true, lastSeen: Date.now() }); onDisconnect(myUserRef).update({ online: false, lastSeen: Date.now() }); } });
     onValue(ref(db, 'users'), snapshot => {
-        const allUsers = snapshot.val() || {}; const usersListEl = document.getElementById('online-users-list'); usersListEl.innerHTML = ''; 
+        const allUsers = snapshot.val() || {}; 
+        
+        // 👇 هذا السطر الجديد ليحسب عدد كل مستخدمي التطبيق
+        state.totalUsers = Object.keys(allUsers).length; 
+        
+        const usersListEl = document.getElementById('online-users-list'); usersListEl.innerHTML = ''; 
         const usersArray = Object.values(allUsers).filter(u => u.userId !== state.myUserId);
         usersArray.sort((a, b) => (b.online === a.online) ? 0 : b.online ? 1 : -1);
         usersArray.forEach(u => {
