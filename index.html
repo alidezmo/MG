@@ -11,8 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -25,6 +26,18 @@
             <button class="zoom-btn" onclick="zoomImage(0.5)"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
             <button class="zoom-btn" onclick="resetZoom()"><i class="fa-solid fa-expand"></i></button>
             <button class="zoom-btn" onclick="zoomImage(-0.5)"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+        </div>
+    </div>
+
+    <div id="notification-prompt-modal">
+        <div class="notification-box">
+            <div class="bell-icon-wrapper"><i class="fa-solid fa-bell bell-shake"></i></div>
+            <h3 style="color: var(--text-color); margin-bottom: 10px;">تفعيل الإشعارات</h3>
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px; line-height: 1.6;">يرجى السماح بالإشعارات لضمان استلام الرسائل الجديدة حتى والتطبيق مغلق.</p>
+            <div style="display:flex; gap:10px; width: 100%;">
+                <button id="allow-notif-btn" class="allow-btn">تفعيل الآن</button>
+                <button id="deny-notif-btn" class="deny-btn">ليس الآن</button>
+            </div>
         </div>
     </div>
 
