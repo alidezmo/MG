@@ -28,7 +28,7 @@ document.getElementById('install-app-btn').addEventListener('click', async () =>
     if (deferredPrompt) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') { document.getElementById('install-app-btn').style.display = 'none'; } deferredPrompt = null; }
 });
 
-// ================= إعدادات Cloudinary الخاصة بك =================
+// ================= إعدادات Cloudinary =================
 const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/daoenc5dp/auto/upload";
 const CLOUDINARY_UPLOAD_PRESET = "Mg_home_preset";
 
@@ -215,15 +215,10 @@ function startApp() {
         await OneSignal.init({
             appId: "c89a2d04-de43-42eb-85b3-2f45c47b6b08",
             safari_web_id: "web.onesignal.auto.1afe2633-50cf-455e-8f3e-a50d8cbe1d12",
-            // السطرين دول هما السر عشان OneSignal ميتخانقش مع ملف sw.js بتاعك
             serviceWorkerParam: { scope: "./" },
             serviceWorkerPath: "sw.js" 
         });
-        
-        // تسجيل الدخول المبدئي وتمرير الـ ID بتاع اليوزر
         OneSignal.login(myUserId);
-
-        // التحقق: لو المستخدم لسه مخدش قرار (يعني الحالة default)، نظهر المربع المخصص بتاعنا
         const permission = OneSignal.Notifications.permission;
         if (permission !== "granted" && permission !== "denied") {
             document.getElementById('notification-prompt-modal').style.display = 'flex';
@@ -231,29 +226,18 @@ function startApp() {
     });
 }
 
-// ================= أزرار المربع المنبثق للإشعارات =================
 document.getElementById('allow-notif-btn').addEventListener('click', () => {
-    // 1. نخفي المربع بتاعنا أول ما يدوس
     document.getElementById('notification-prompt-modal').style.display = 'none';
-    
-    // 2. نكلم OneSignal ونطلب منه يطلّع رسالة المتصفح الأصلية
     window.OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.Notifications.requestPermission();
-        
-        // 3. التريكة: لو اليوزر داس "سماح (Allow)" في رسالة المتصفح، نأكد الربط فوراً
         if (OneSignal.Notifications.permission === "granted") {
-            OneSignal.login(myUserId); // تأكيد ربط الموبايل بالحساب
-            
-            // إشعار داخلي شيك لتأكيد النجاح
-            setTimeout(() => {
-                showInAppToast('النظام', 'تم تفعيل الإشعارات بنجاح! 🔔', 'global', 'system');
-            }, 1000);
+            OneSignal.login(myUserId); 
+            setTimeout(() => { showInAppToast('النظام', 'تم تفعيل الإشعارات بنجاح! 🔔', 'global', 'system'); }, 1000);
         }
     });
 });
 
 document.getElementById('deny-notif-btn').addEventListener('click', () => {
-    // لو رفض، نخفي المربع وخلاص
     document.getElementById('notification-prompt-modal').style.display = 'none';
 });
 
@@ -304,6 +288,13 @@ window.switchChat = function(mode, title, targetId = null) {
 
     currentListeners.push(onChildAdded(refQuery, (snapshot) => {
         const msg = snapshot.val(); renderMsg(snapshot.key, msg, msg.name === myName);
+        
+        // --- ميزة تشغيل صوت عند الاستقبال ---
+        if (msg.name !== myName && msg.timestamp > appStartTime) {
+            const receiveSound = document.getElementById('sound-received');
+            if(receiveSound) receiveSound.play().catch(()=>{});
+        }
+
         if (msg.name !== myName && currentChatMode === 'private' && (!msg.readBy || !msg.readBy[myUserId])) {
             if (!document.hidden) update(ref(db, `${currentMessagesRefPath}/${snapshot.key}`), { [`readBy/${myUserId}`]: true }); else window.pendingUnreadMessages.push(`${currentMessagesRefPath}/${snapshot.key}`);
         }
@@ -355,8 +346,27 @@ function updateReactionsUI(msgKey, reactionsObj) {
 }
 
 window.deleteMsg = function(msgKey) { if(confirm("حذف الرسالة لدى الجميع؟")) remove(ref(db, `${currentMessagesRefPath}/${msgKey}`)); };
-window.prepareReply = function(name, textExcerpt) { replyingToMsg = { name: name, text: textExcerpt }; document.getElementById('reply-preview-box').style.display = 'block'; document.getElementById('reply-preview-name').innerText = name; document.getElementById('reply-preview-text').innerText = textExcerpt; msgInput.focus(); };
+
+// --- ميزة التمرير والرد ---
+window.prepareReply = function(msgKey, name, textExcerpt) { 
+    replyingToMsg = { key: msgKey, name: name, text: textExcerpt }; 
+    document.getElementById('reply-preview-box').style.display = 'block'; 
+    document.getElementById('reply-preview-name').innerText = name; 
+    document.getElementById('reply-preview-text').innerText = textExcerpt; 
+    msgInput.focus(); 
+};
 window.cancelReply = function() { replyingToMsg = null; document.getElementById('reply-preview-box').style.display = 'none'; };
+
+window.scrollToMsg = function(key) {
+    const el = document.getElementById('msg-' + key);
+    if(el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('highlight-msg'); // إضافة كلاس الإضاءة
+        setTimeout(() => el.classList.remove('highlight-msg'), 1500); // إزالته بعد ثانية ونصف
+    } else {
+        showInAppToast('النظام', 'الرسالة الأصلية غير موجودة أو قديمة جداً', 'global', 'system');
+    }
+};
 
 window.cancelAttachment = function() {
     window.pendingAttachment = null; document.getElementById('file-preview-box').style.display = 'none';
@@ -404,6 +414,31 @@ msgInput.addEventListener('input', function() {
     set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: true }); clearTimeout(window.typingTimeout); window.typingTimeout = setTimeout(() => set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }), 1500);
 });
 
+// ================= صندوق الإيموجي =================
+const emojiBtn = document.getElementById('emoji-btn');
+const emojiPickerContainer = document.getElementById('emoji-picker-container');
+const emojiPicker = document.querySelector('emoji-picker');
+
+if (emojiBtn && emojiPickerContainer && emojiPicker) {
+    emojiBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); 
+        emojiPickerContainer.style.display = emojiPickerContainer.style.display === 'none' ? 'block' : 'none';
+    });
+
+    emojiPicker.addEventListener('emoji-click', event => {
+        msgInput.value += event.detail.unicode;
+        msgInput.style.height = 'auto'; 
+        msgInput.style.height = (msgInput.scrollHeight) + 'px'; 
+        msgInput.focus();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#emoji-picker-container') && e.target.id !== 'emoji-btn') {
+            emojiPickerContainer.style.display = 'none';
+        }
+    });
+}
+
 function renderTempMsg(msgKey, msgObj) {
     const div = document.createElement('div'); div.id = 'msg-' + msgKey; div.className = `msg-bubble msg-me`;
     div.style.opacity = '0.7'; let htmlContent = '';
@@ -432,7 +467,6 @@ function renderTempMsg(msgKey, msgObj) {
 
 // ================= نظام الإشعارات الحقيقية (OneSignal) =================
 function sendRealPushNotification(targetId, title, message) {
-    // 💡 التريكة: قسمنا المفتاح لجزأين عشان GitHub ميكتشفوش ويبعت إنذار
     const part1 = "os_v2_app_zcnc2bg6inboxbntf5c4i63lba";
     const part2 = "hjebt6rpyesuushnigpfbyqp3vzbcoeyd7blnpj6zjwt2e6vqedjf3wdy226rvvgbkx4natfamufa";
     const REST_API_KEY = part1 + part2; 
@@ -503,7 +537,6 @@ async function sendMessage(dataObj) {
     const roomID = currentChatMode === 'global' ? 'global' : (myUserId < currentChatTargetId ? `${myUserId}_${currentChatTargetId}` : `${currentChatTargetId}_${myUserId}`);
     set(ref(db, `typing/${roomID}/${myUserId}`), { name: myName, isTyping: false }); window.cancelReply(); 
 
-    // إرسال الإشعار بعد تسجيل الرسالة في الداتابيز
     let pushText = dataObj.type === 'text' ? dataObj.content : (dataObj.type === 'audio' ? '🎤 رسالة صوتية' : '📁 ملف مرفق');
     let targetForPush = currentChatMode === 'global' ? 'global' : currentChatTargetId;
     sendRealPushNotification(targetForPush, myName, pushText);
@@ -526,6 +559,11 @@ document.getElementById('send-btn').addEventListener('click', () => {
         } else {
             sendMessage({ type: 'text', content: text }); 
         }
+        
+        // --- ميزة تشغيل صوت عند الإرسال ---
+        const sendSound = document.getElementById('sound-sent');
+        if(sendSound) sendSound.play().catch(()=>{});
+
         msgInput.value = ''; 
         msgInput.style.height = 'auto';
         msgInput.blur(); 
@@ -587,7 +625,9 @@ function renderMsg(msgKey, msgObj, isMe) {
 
     const div = document.createElement('div'); div.id = 'msg-' + msgKey; div.className = `msg-bubble ${isMe ? 'msg-me' : 'msg-other'}`;
     let htmlContent = '', textExcerptForReply = '', safeContentToCopy = ''; 
-    let quoteHtml = ''; if(msgObj.replyTo) quoteHtml = `<div class="quoted-msg" onclick="prepareReply('${msgObj.name}', '${msgObj.content ? 'نص' : 'مرفق'}')"><strong>${msgObj.replyTo.name}</strong><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${msgObj.replyTo.text}</div></div>`;
+    
+    // --- ميزة التمرير عند النقر على الاقتباس ---
+    let quoteHtml = ''; if(msgObj.replyTo) quoteHtml = `<div class="quoted-msg" onclick="scrollToMsg('${msgObj.replyTo.key}')"><strong>${msgObj.replyTo.name}</strong><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${msgObj.replyTo.text}</div></div>`;
 
     let overlayHtml = (window.uploadingKeys && window.uploadingKeys.includes(msgKey)) ? `<div id="overlay-${msgKey}" class="temp-msg-overlay"><i class="fa-solid fa-circle-notch temp-spinner"></i></div>` : '';
 
@@ -670,7 +710,8 @@ function renderMsg(msgKey, msgObj, isMe) {
     }
 
     const showDeleteBtn = isMe || myRole === 'admin';
-    let actionsHtml = `<div class="msg-options" onclick="toggleMsgMenu('${msgKey}'); event.stopPropagation();"><i class="fa-solid fa-ellipsis-vertical"></i><div class="msg-menu" id="menu-${msgKey}"><button onclick="prepareReply('${msgObj.name}', '${textExcerptForReply}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-reply"></i> رد</button>${msgObj.type === 'text' ? `<button onclick="copyMsgText('${safeContentToCopy}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-copy"></i> نسخ</button>` : ''}${showDeleteBtn ? `<button class="delete-btn" onclick="deleteMsg('${msgKey}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-trash"></i> حذف للجميع</button>` : ''}</div></div>`;
+    // --- تمرير msgKey لزر الرد هنا ---
+    let actionsHtml = `<div class="msg-options" onclick="toggleMsgMenu('${msgKey}'); event.stopPropagation();"><i class="fa-solid fa-ellipsis-vertical"></i><div class="msg-menu" id="menu-${msgKey}"><button onclick="prepareReply('${msgKey}', '${msgObj.name}', '${textExcerptForReply}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-reply"></i> رد</button>${msgObj.type === 'text' ? `<button onclick="copyMsgText('${safeContentToCopy}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-copy"></i> نسخ</button>` : ''}${showDeleteBtn ? `<button class="delete-btn" onclick="deleteMsg('${msgKey}'); event.stopPropagation(); toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-trash"></i> حذف للجميع</button>` : ''}</div></div>`;
     let reactMenuHtml = `<div class="reaction-menu" id="react-${msgKey}"><span class="reaction-emoji" onclick="addReaction('${msgKey}', '👍'); event.stopPropagation();">👍</span><span class="reaction-emoji" onclick="addReaction('${msgKey}', '❤️'); event.stopPropagation();">❤️</span><span class="reaction-emoji" onclick="addReaction('${msgKey}', '😂'); event.stopPropagation();">😂</span><span class="reaction-emoji" onclick="addReaction('${msgKey}', '😮'); event.stopPropagation();">😮</span><span class="reaction-emoji" onclick="addReaction('${msgKey}', '😢'); event.stopPropagation();">😢</span><span class="reaction-emoji" onclick="addReaction('${msgKey}', '🙏'); event.stopPropagation();">🙏</span></div>`;
     let readStatusHtml = ''; if (isMe && currentChatMode === 'private') readStatusHtml = `<i id="status-${msgKey}" class="${msgObj.readBy ? "fa-solid fa-check-double status-read" : "fa-solid fa-check-double"}" style="transition: color 0.4s ease, text-shadow 0.4s ease; margin-right: 3px;"></i>`;
     const timeStr = msgObj.timestamp ? new Date(msgObj.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
@@ -699,7 +740,8 @@ function renderMsg(msgKey, msgObj, isMe) {
         cancelPress(); 
         if (!isSwiping) return; 
         let diffX = e.changedTouches ? e.changedTouches[0].clientX - touchStartX : 0; 
-        if (Math.abs(diffX) > 80) { prepareReply(msgObj.name, textExcerptForReply); } 
+        // --- تمرير msgKey عند الرد بالسحب ---
+        if (Math.abs(diffX) > 80) { prepareReply(msgKey, msgObj.name, textExcerptForReply); } 
         div.style.transform = `translateX(0)`; 
         setTimeout(() => isSwiping = false, 100);
     }); 
