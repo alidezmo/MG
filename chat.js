@@ -95,7 +95,23 @@ window.switchChat = function(mode, title, targetId = null) {
             if (!document.hidden) update(ref(db, `${state.currentMessagesRefPath}/${snapshot.key}`), { [`readBy/${state.myUserId}`]: true }); else state.pendingUnreadMessages.push(`${state.currentMessagesRefPath}/${snapshot.key}`);
         }
     }));
-    state.currentListeners.push(onChildChanged(refQuery, (snapshot) => { const msg = snapshot.val(); const statusIcon = document.getElementById('status-' + snapshot.key); if (statusIcon && msg.readBy) statusIcon.className = "fa-solid fa-check-double status-read"; updateReactionsUI(snapshot.key, msg.reactions); }));
+  state.currentListeners.push(onChildChanged(refQuery, (snapshot) => { 
+        const msg = snapshot.val(); 
+        const statusIcon = document.getElementById('status-' + snapshot.key); 
+        if (statusIcon) {
+            let isFullyRead = false;
+            if (state.currentChatMode === 'private') {
+                isFullyRead = msg.readBy ? true : false;
+            } else {
+                // إذا كان الجروب العام، نتحقق هل عدد القراء يساوي كل الناس؟
+                const readCount = msg.readBy ? Object.keys(msg.readBy).length : 0;
+                isFullyRead = readCount > 0 && readCount >= (state.totalUsers - 1);
+            }
+            // إذا قرأها الجميع (صحين أزرق)، وإلا (صح واحدة)
+            statusIcon.className = isFullyRead ? "fa-solid fa-check-double status-read" : "fa-solid fa-check";
+        }
+        updateReactionsUI(snapshot.key, msg.reactions); 
+    }));
     state.currentListeners.push(onChildRemoved(refQuery, (snapshot) => { const el = document.getElementById('msg-' + snapshot.key); if(el) { el.style.animation = 'fadeIn 0.3s ease reverse'; setTimeout(() => el.remove(), 250); } }));
 
     state.typingListener = onValue(ref(db, `typing/${roomID}`), snapshot => {
@@ -240,7 +256,17 @@ function renderMsg(msgKey, msgObj, isMe, isPrepend = false) {
     const showDeleteBtn = isMe || state.myRole === 'admin';
    let actionsHtml = `<div class="msg-options" onclick="window.toggleMsgMenu('${msgKey}'); event.stopPropagation();"><i class="fa-solid fa-ellipsis-vertical"></i><div class="msg-menu" id="menu-${msgKey}"><button onclick="window.prepareReply('${msgKey}', '${msgObj.name}', '${textExcerptForReply}'); event.stopPropagation(); window.toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-reply"></i> رد</button>${msgObj.type === 'text' ? `<button onclick="window.copyMsgText('${safeContentToCopy}'); event.stopPropagation(); window.toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-copy"></i> نسخ</button>` : ''}${isMe ? `<button onclick="window.showMsgInfo('${msgKey}'); event.stopPropagation(); window.toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-circle-info"></i> تفاصيل الرسالة</button>` : ''}${showDeleteBtn ? `<button class="delete-btn" onclick="window.deleteMsg('${msgKey}'); event.stopPropagation(); window.toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-trash"></i> حذف للجميع</button>` : ''}</div></div>`;
     let reactMenuHtml = `<div class="reaction-menu" id="react-${msgKey}"><span class="reaction-emoji" onclick="window.addReaction('${msgKey}', '👍'); event.stopPropagation();">👍</span><span class="reaction-emoji" onclick="window.addReaction('${msgKey}', '❤️'); event.stopPropagation();">❤️</span><span class="reaction-emoji" onclick="window.addReaction('${msgKey}', '😂'); event.stopPropagation();">😂</span><span class="reaction-emoji" onclick="window.addReaction('${msgKey}', '😮'); event.stopPropagation();">😮</span><span class="reaction-emoji" onclick="window.addReaction('${msgKey}', '😢'); event.stopPropagation();">😢</span><span class="reaction-emoji" onclick="window.addReaction('${msgKey}', '🙏'); event.stopPropagation();">🙏</span></div>`;
-    let readStatusHtml = ''; if (isMe && state.currentChatMode === 'private') readStatusHtml = `<i id="status-${msgKey}" class="${msgObj.readBy ? "fa-solid fa-check-double status-read" : "fa-solid fa-check-double"}" style="transition: color 0.4s ease, text-shadow 0.4s ease; margin-right: 3px;"></i>`;
+    let readStatusHtml = ''; 
+    if (isMe) {
+        let isFullyRead = false;
+        if (state.currentChatMode === 'private') {
+            isFullyRead = msgObj.readBy ? true : false;
+        } else {
+            const readCount = msgObj.readBy ? Object.keys(msgObj.readBy).length : 0;
+            isFullyRead = readCount > 0 && readCount >= (state.totalUsers - 1);
+        }
+        readStatusHtml = `<i id="status-${msgKey}" class="${isFullyRead ? "fa-solid fa-check-double status-read" : "fa-solid fa-check"}" style="transition: color 0.4s ease, text-shadow 0.4s ease; margin-right: 3px;"></i>`;
+    }
     const timeStr = msgObj.timestamp ? new Date(msgObj.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 
     div.innerHTML = `${actionsHtml}${reactMenuHtml}${!isMe ? `<span class="sender-name">${msgObj.name}</span>` : ''}${quoteHtml}<div>${htmlContent}</div><div class="msg-meta">${timeStr} ${readStatusHtml}</div><div class="reactions-display hidden" id="reactions-display-${msgKey}"></div>`;
