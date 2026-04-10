@@ -441,13 +441,13 @@ if (emojiBtn && emojiPickerContainer) {
         msgInput.focus();
     });
 
+    // الإصلاح هنا: استخدمنا closest للتأكد من أن الضغطة لم تكن على الأيقونة داخل الزر
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('#emoji-picker-container') && e.target.id !== 'emoji-btn') {
+        if (!e.target.closest('#emoji-picker-container') && !e.target.closest('#emoji-btn')) {
             emojiPickerContainer.style.display = 'none';
         }
     });
 }
-
 function renderTempMsg(msgKey, msgObj) {
     const div = document.createElement('div'); div.id = 'msg-' + msgKey; div.className = `msg-bubble msg-me`;
     div.style.opacity = '0.7'; let htmlContent = '';
