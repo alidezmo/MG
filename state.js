@@ -20,6 +20,7 @@ export const state = {
     isLoadingMore: false,   // لمنع تكرار التحميل إذا كان يحمل بالفعل
     allMessagesLoaded: false,
 
-    totalUsers: 0
+    totalUsers: 0,
+    offlineQueue: []
     
 };
