@@ -183,25 +183,109 @@ async function sendRealPushNotification(targetId, title, message) {
     } catch (e) { console.warn("تم حظر إرسال الإشعار بواسطة المتصفح."); }
 }
 
+
+// دالة لمعالجة الرسائل المنتظرة عند عودة الإنترنت
+window.processOfflineQueue = async function() {
+    if (state.offlineQueue.length === 0) return;
+    
+    window.showInAppToast('النظام', 'جاري إرسال الرسائل المعلقة... 📤', 'global', 'system');
+    
+    // نسخ الطابور وإفراغه فوراً لمنع التكرار
+    const queue = [...state.offlineQueue];
+    state.offlineQueue = [];
+
+    for (const msgData of queue) {
+        // حذف الرسالة المؤقتة من الشاشة قبل إرسال الحقيقية
+        document.getElementById('temp-' + msgData.tempKey)?.remove();
+        // إرسال الرسالة فعلياً
+        await window.sendMessage(msgData.data);
+    }
+};
+
 window.sendMessage = async function(dataObj) {
     if(!state.currentMessagesRefPath) return; 
-    dataObj.name = state.myName; dataObj.timestamp = Date.now(); if(state.replyingToMsg) dataObj.replyTo = state.replyingToMsg;
-    const newRef = push(ref(db, state.currentMessagesRefPath)); const msgKey = newRef.key;
-    if (dataObj.rawFile) {
-        state.uploadingKeys.push(msgKey); renderTempMsg(msgKey, dataObj);
-        const formData = new FormData(); formData.append('file', dataObj.rawFile); formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-        try {
-            const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }); const uploadData = await response.json();
-            if (uploadData.secure_url) { dataObj.content = uploadData.secure_url; delete dataObj.rawFile; await set(newRef, dataObj); state.uploadingKeys = state.uploadingKeys.filter(k => k !== msgKey); const overlay = document.getElementById('overlay-' + msgKey); if(overlay) overlay.remove(); } 
-            else throw new Error("Cloudinary Error");
-        } catch (err) { state.uploadingKeys = state.uploadingKeys.filter(k => k !== msgKey); const overlay = document.getElementById('overlay-' + msgKey); if(overlay) overlay.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; font-size:30px;"></i>'; return; }
-    } else { await set(newRef, dataObj); }
 
+    // --- 1. فحص حالة الإنترنت قبل أي شيء ---
+    if (!navigator.onLine) {
+        const tempKey = 'temp-' + Date.now();
+        // حفظ الرسالة في الطابور ليرسلها التطبيق لاحقاً
+        state.offlineQueue.push({ tempKey: tempKey, data: dataObj });
+        
+        // عرض الرسالة فوراً للمستخدم بعلامة الساعة 🕒
+        renderOfflineMsg(tempKey, dataObj);
+        window.showInAppToast('تنبيه', 'لا يوجد إنترنت، سيتم الإرسال فور العودة 🕒', 'global', 'system');
+        return;
+    }
+
+    // --- 2. إذا وجد إنترنت، نكمل الإرسال الطبيعي كما في كودك ---
+    dataObj.name = state.myName; 
+    dataObj.timestamp = Date.now(); 
+    if(state.replyingToMsg) dataObj.replyTo = state.replyingToMsg;
+
+    const newRef = push(ref(db, state.currentMessagesRefPath)); 
+    const msgKey = newRef.key;
+
+    if (dataObj.rawFile) {
+        state.uploadingKeys.push(msgKey); 
+        renderTempMsg(msgKey, dataObj);
+        const formData = new FormData(); 
+        formData.append('file', dataObj.rawFile); 
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        try {
+            const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }); 
+            const uploadData = await response.json();
+            if (uploadData.secure_url) { 
+                dataObj.content = uploadData.secure_url; 
+                delete dataObj.rawFile; 
+                await set(newRef, dataObj); 
+                state.uploadingKeys = state.uploadingKeys.filter(k => k !== msgKey); 
+                const overlay = document.getElementById('overlay-' + msgKey); 
+                if(overlay) overlay.remove(); 
+            } else throw new Error("Cloudinary Error");
+        } catch (err) { 
+            state.uploadingKeys = state.uploadingKeys.filter(k => k !== msgKey); 
+            const overlay = document.getElementById('overlay-' + msgKey); 
+            if(overlay) overlay.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; font-size:30px;"></i>'; 
+            return; 
+        }
+    } else { 
+        await set(newRef, dataObj); 
+    }
+
+    // --- 3. إنهاء العمليات الجانبية (إشعار الكتابة، الرد، الإشعارات) ---
     const roomID = state.currentChatMode === 'global' ? 'global' : (state.myUserId < state.currentChatTargetId ? `${state.myUserId}_${state.currentChatTargetId}` : `${state.currentChatTargetId}_${state.myUserId}`);
-    set(ref(db, `typing/${roomID}/${state.myUserId}`), { name: state.myName, isTyping: false }); window.cancelReply(); 
-    sendRealPushNotification(state.currentChatMode === 'global' ? 'global' : state.currentChatTargetId, state.myName, dataObj.type === 'text' ? dataObj.content : (dataObj.type === 'audio' ? '🎤 رسالة صوتية' : '📁 ملف مرفق'));
+    set(ref(db, `typing/${roomID}/${state.myUserId}`), { name: state.myName, isTyping: false }); 
+    window.cancelReply(); 
+
+    sendRealPushNotification(
+        state.currentChatMode === 'global' ? 'global' : state.currentChatTargetId, 
+        state.myName, 
+        dataObj.type === 'text' ? dataObj.content : (dataObj.type === 'audio' ? '🎤 رسالة صوتية' : '📁 ملف مرفق')
+    );
+    
     msgInput.style.height = 'auto';
+};
+
+
+function renderOfflineMsg(tempKey, dataObj) {
+    const div = document.createElement('div');
+    div.id = tempKey;
+    div.className = `msg-bubble msg-me`; // تظهر كأنها مني
+    div.style.opacity = '0.6'; // نجعلها باهتة قليلاً كأنها لم تُرسل بعد
+    
+    let content = dataObj.type === 'text' ? dataObj.content : (dataObj.type === 'audio' ? '🎤 رسالة صوتية معلقة' : '📁 ملف معلق');
+    
+    div.innerHTML = `
+        <div>${content}</div>
+        <div class="msg-meta">في الانتظار... <i class="fa-regular fa-clock"></i></div>
+    `;
+    
+    document.getElementById('chat-messages').appendChild(div);
+    document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' });
 }
+
+
 
 document.getElementById('send-btn').addEventListener('click', () => { 
     const text = msgInput.value.trim(); 
