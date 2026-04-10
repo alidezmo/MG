@@ -19,9 +19,9 @@
 </head>
 <body>
 
-    <audio id="notification-sound" src="https://proxy.notificationsounds.com/message-tones/pristine-609/download/file-sounds-1140-pristine.mp3" preload="auto"></audio>
-    <audio id="sound-sent" src="https://proxy.notificationsounds.com/notification-sounds/blop-804/download/file-sounds-1144-blop.mp3" preload="auto"></audio>
-    <audio id="sound-received" src="https://proxy.notificationsounds.com/message-tones/suns-out-606/download/file-sounds-1140-suns-out.mp3" preload="auto"></audio>
+    <audio id="notification-sound" src="./notification-sound.wav" preload="auto"></audio>
+    <audio id="sound-sent" src="./sound-sent.mp4" preload="auto"></audio>
+    <audio id="sound-received" src="./sound-received.mp3" preload="auto"></audio>
 
     <div id="lightbox">
         <button class="lightbox-close-btn" onclick="closeLightbox()"><i class="fa-solid fa-xmark"></i></button>
@@ -143,17 +143,18 @@
                 <div style="font-size:14px; color:var(--text-color); opacity:0.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="reply-preview-text">...</div>
             </div>
 
-            <div id="emoji-picker-container" style="display:none; position:absolute; bottom:70px; right:15px; z-index:100; box-shadow: 0 10px 20px rgba(0,0,0,0.2); border-radius: 8px;">
-                <emoji-picker class="light"></emoji-picker>
+            <div id="emoji-picker-container" style="display:none; position:absolute; bottom:65px; right:15px; z-index:1000; box-shadow: 0 10px 20px rgba(0,0,0,0.2); border-radius: 8px;">
+                <emoji-picker class="light" style="width: 100%; max-width: 320px; height: 350px;"></emoji-picker>
             </div>
 
             <div class="chat-input-area">
                 <div class="input-wrapper" id="normal-input-ui">
                     <button class="icon-btn" id="emoji-btn" title="إيموجي"><i class="fa-regular fa-face-smile"></i></button>
-                    
                     <button class="icon-btn" id="attach-btn" title="إرفاق ملف"><i class="fa-solid fa-paperclip"></i></button>
                     <input type="file" id="file-input">
+                    
                     <textarea id="msg-input" class="chat-input" placeholder="اكتب رسالة..." rows="1"></textarea>
+                    
                     <button class="icon-btn" id="mic-btn" title="تسجيل صوتي"><i class="fa-solid fa-microphone"></i></button>
                 </div>
 
@@ -162,6 +163,7 @@
                     <span class="record-indicator">🔴 تسجيل <span id="record-timer" style="color:var(--text-color);">00:00</span></span>
                     <button class="icon-btn" id="send-record-btn" style="color:#10b981;" title="إرسال"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
+                
                 <button class="send-btn" id="send-btn" title="إرسال"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </div>
