@@ -105,3 +105,20 @@ document.getElementById('allow-notif-btn').addEventListener('click', () => {
 document.getElementById('deny-notif-btn').addEventListener('click', () => { 
     document.getElementById('notification-prompt-modal').style.display = 'none'; 
 });
+
+
+
+
+
+// مراقبة حالة الإنترنت
+window.addEventListener('online', () => {
+    document.body.classList.remove('is-offline');
+    window.showInAppToast('النظام', 'تم استعادة الاتصال بالإنترنت! 🟢', 'global', 'system');
+    // تشغيل إرسال الطابور
+    if (window.processOfflineQueue) window.processOfflineQueue();
+});
+
+window.addEventListener('offline', () => {
+    document.body.classList.add('is-offline');
+    window.showInAppToast('تنبيه', 'أنت تعمل الآن بدون إنترنت 🔴', 'global', 'system');
+});
