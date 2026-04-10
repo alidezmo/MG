@@ -184,20 +184,26 @@ async function sendRealPushNotification(targetId, title, message) {
 }
 
 
-// دالة لمعالجة الرسائل المنتظرة عند عودة الإنترنت
 window.processOfflineQueue = async function() {
     if (state.offlineQueue.length === 0) return;
     
     window.showInAppToast('النظام', 'جاري إرسال الرسائل المعلقة... 📤', 'global', 'system');
     
-    // نسخ الطابور وإفراغه فوراً لمنع التكرار
     const queue = [...state.offlineQueue];
     state.offlineQueue = [];
 
     for (const msgData of queue) {
-        // حذف الرسالة المؤقتة من الشاشة قبل إرسال الحقيقية
-        document.getElementById('temp-' + msgData.tempKey)?.remove();
-        // إرسال الرسالة فعلياً
+        // التصحيح هنا: msgData.tempKey يحتوي بالفعل على كلمة "temp-"
+        const tempEl = document.getElementById(msgData.tempKey);
+        
+        if (tempEl) {
+            // إضافة تأثير اختفاء بسيط قبل الحذف
+            tempEl.style.transition = 'opacity 0.3s ease';
+            tempEl.style.opacity = '0';
+            setTimeout(() => tempEl.remove(), 300);
+        }
+
+        // إرسال الرسالة الحقيقية
         await window.sendMessage(msgData.data);
     }
 };
