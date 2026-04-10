@@ -91,7 +91,7 @@ window.switchChat = function(mode, title, targetId = null) {
     state.currentListeners.push(onChildAdded(refQuery, (snapshot) => {
         const msg = snapshot.val(); renderMsg(snapshot.key, msg, msg.name === state.myName, false);
         if (msg.name !== state.myName && msg.timestamp > state.appStartTime) { const receiveSound = document.getElementById('sound-received'); if(receiveSound) { receiveSound.currentTime = 0; receiveSound.play().catch(()=>{}); } }
-        if (msg.name !== state.myName && state.currentChatMode === 'private' && (!msg.readBy || !msg.readBy[state.myUserId])) {
+        if (msg.name !== state.myName && (!msg.readBy || !msg.readBy[state.myUserId])) {
             if (!document.hidden) update(ref(db, `${state.currentMessagesRefPath}/${snapshot.key}`), { [`readBy/${state.myUserId}`]: true }); else state.pendingUnreadMessages.push(`${state.currentMessagesRefPath}/${snapshot.key}`);
         }
     }));
@@ -238,7 +238,7 @@ function renderMsg(msgKey, msgObj, isMe, isPrepend = false) {
     else if (msgObj.type === 'audio') { const audioId = 'audio-' + msgKey; const durationText = msgObj.durationText || '00:00'; htmlContent = `<div style="position:relative;"><div class="custom-audio-player"><button class="play-btn" onclick="window.toggleAudio('${audioId}')"><i class="fa-solid fa-play" id="icon-${audioId}"></i></button><div class="audio-progress"><div class="progress-bar" id="progress-${audioId}"></div></div><div class="audio-time" id="time-${audioId}" data-duration="${durationText}">${durationText}</div><audio id="${audioId}" src="${msgObj.content}" style="display:none;" ontimeupdate="window.updateAudioProgress('${audioId}')" onended="window.audioEnded('${audioId}')"></audio></div>${overlayHtml}</div>`; textExcerptForReply = '🎤 صوت'; }
 
     const showDeleteBtn = isMe || state.myRole === 'admin';
-    let actionsHtml = `<div class="msg-options" onclick="window.toggleMsgMenu('${msgKey}'); event.stopPropagation();"><i class="fa-solid fa-ellipsis-vertical"></i><div class="msg-menu" id="menu-${msgKey}"><button onclick="window.prepareReply('${msgKey}', '${msgObj.name}', '${textExcerptForReply}'); event.stopPropagation(); window.toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-reply"></i> رد</button>${msgObj.type === 'text' ? `<button onclick="window.copyMsgText('${safeContentToCopy}'); event.stopPropagation(); window.toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-copy"></i> نسخ</button>` : ''}${showDeleteBtn ? `<button class="delete-btn" onclick="window.deleteMsg('${msgKey}'); event.stopPropagation(); window.toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-trash"></i> حذف للجميع</button>` : ''}</div></div>`;
+   let actionsHtml = `<div class="msg-options" onclick="window.toggleMsgMenu('${msgKey}'); event.stopPropagation();"><i class="fa-solid fa-ellipsis-vertical"></i><div class="msg-menu" id="menu-${msgKey}"><button onclick="window.prepareReply('${msgKey}', '${msgObj.name}', '${textExcerptForReply}'); event.stopPropagation(); window.toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-reply"></i> رد</button>${msgObj.type === 'text' ? `<button onclick="window.copyMsgText('${safeContentToCopy}'); event.stopPropagation(); window.toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-copy"></i> نسخ</button>` : ''}${isMe ? `<button onclick="window.showMsgInfo('${msgKey}'); event.stopPropagation(); window.toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-circle-info"></i> تفاصيل الرسالة</button>` : ''}${showDeleteBtn ? `<button class="delete-btn" onclick="window.deleteMsg('${msgKey}'); event.stopPropagation(); window.toggleMsgMenu('${msgKey}')"><i class="fa-solid fa-trash"></i> حذف للجميع</button>` : ''}</div></div>`;
     let reactMenuHtml = `<div class="reaction-menu" id="react-${msgKey}"><span class="reaction-emoji" onclick="window.addReaction('${msgKey}', '👍'); event.stopPropagation();">👍</span><span class="reaction-emoji" onclick="window.addReaction('${msgKey}', '❤️'); event.stopPropagation();">❤️</span><span class="reaction-emoji" onclick="window.addReaction('${msgKey}', '😂'); event.stopPropagation();">😂</span><span class="reaction-emoji" onclick="window.addReaction('${msgKey}', '😮'); event.stopPropagation();">😮</span><span class="reaction-emoji" onclick="window.addReaction('${msgKey}', '😢'); event.stopPropagation();">😢</span><span class="reaction-emoji" onclick="window.addReaction('${msgKey}', '🙏'); event.stopPropagation();">🙏</span></div>`;
     let readStatusHtml = ''; if (isMe && state.currentChatMode === 'private') readStatusHtml = `<i id="status-${msgKey}" class="${msgObj.readBy ? "fa-solid fa-check-double status-read" : "fa-solid fa-check-double"}" style="transition: color 0.4s ease, text-shadow 0.4s ease; margin-right: 3px;"></i>`;
     const timeStr = msgObj.timestamp ? new Date(msgObj.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
@@ -263,3 +263,45 @@ function renderMsg(msgKey, msgObj, isMe, isPrepend = false) {
     div.addEventListener('touchmove', e => { let diffX = e.touches[0].clientX - touchStartX; let diffY = e.touches[0].clientY - touchStartY; if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) cancelPress(); if (Math.abs(diffX) > Math.abs(diffY) * 1.5) { isSwiping = true; if ((isMe && diffX < -30) || (!isMe && diffX > 30)) { div.style.transform = `translateX(${diffX}px)`; } } }, {passive: true});
     div.addEventListener('mousedown', startPress); div.addEventListener('mouseup', cancelPress); div.addEventListener('mouseleave', cancelPress);
 }
+
+// ================= تفاصيل الرسالة (من قرأ وتفاعل) =================
+window.showMsgInfo = async function(msgKey) {
+    const modal = document.getElementById('msg-info-modal');
+    const content = document.getElementById('msg-info-content');
+    content.innerHTML = '<div style="text-align:center; padding: 20px;"><i class="fa-solid fa-circle-notch fa-spin" style="color:var(--primary-color); font-size:24px;"></i></div>';
+    modal.style.display = 'flex';
+
+    try {
+        const msgSnap = await get(ref(db, `${state.currentMessagesRefPath}/${msgKey}`));
+        const msg = msgSnap.val();
+        if(!msg) { content.innerHTML = 'الرسالة غير موجودة.'; return; }
+
+        const usersSnap = await get(ref(db, 'users'));
+        const users = usersSnap.val() || {};
+        let html = '';
+
+        // قسم التفاعلات
+        if (msg.reactions) {
+            html += '<div style="font-weight:bold; margin-bottom:10px; color:var(--primary-color);">تفاعل معها:</div>';
+            for (let uid in msg.reactions) {
+                let uName = users[uid] ? users[uid].name : 'مستخدم';
+                html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid var(--border-color); background:var(--input-bg); border-radius:8px; margin-bottom:5px;"><span>${uName}</span> <span style="font-size:18px;">${msg.reactions[uid]}</span></div>`;
+            }
+        }
+
+        // قسم القراءة
+        html += '<div style="font-weight:bold; margin-top:15px; margin-bottom:10px; color:var(--primary-color);">قرأها:</div>';
+        if (msg.readBy) {
+            for (let uid in msg.readBy) {
+                let uName = users[uid] ? users[uid].name : 'مستخدم';
+                html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid var(--border-color); background:var(--input-bg); border-radius:8px; margin-bottom:5px;"><span>${uName}</span> <i class="fa-solid fa-check-double status-read"></i></div>`;
+            }
+        } else {
+            html += '<div style="padding:10px; opacity:0.7; font-size:13px; text-align:center;">لم يقرأها أحد بعد.</div>';
+        }
+
+        content.innerHTML = html;
+    } catch(e) {
+        content.innerHTML = '<div style="color:#ef4444; text-align:center;">حدث خطأ أثناء الجلب.</div>';
+    }
+};
