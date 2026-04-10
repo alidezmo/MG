@@ -258,3 +258,12 @@ input[type="file"] { display: none; }
     .mobile-menu-btn { display: block; }
     .msg-bubble { max-width: 85%; }
 }
+
+/* ================= تأثير وميض للرسالة عند التمرير إليها ================= */
+.highlight-msg {
+    animation: highlightPulse 1.5s ease-out;
+}
+@keyframes highlightPulse {
+    0% { transform: scale(1.05); background-color: rgba(16, 185, 129, 0.3); box-shadow: 0 0 15px #10b981; }
+    100% { transform: scale(1); background-color: inherit; box-shadow: none; }
+}
