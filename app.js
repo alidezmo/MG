@@ -87,3 +87,20 @@ function registerInFirebase() {
         });
     });
 }
+
+
+// ================= أزرار التحكم في نافذة الإشعارات =================
+document.getElementById('allow-notif-btn').addEventListener('click', () => {
+    document.getElementById('notification-prompt-modal').style.display = 'none';
+    window.OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.Notifications.requestPermission();
+        if (OneSignal.Notifications.permission === "granted") {
+            OneSignal.login(state.myUserId); 
+            setTimeout(() => { window.showInAppToast('النظام', 'تم تفعيل الإشعارات بنجاح! 🔔', 'global', 'system'); }, 1000);
+        }
+    });
+});
+
+document.getElementById('deny-notif-btn').addEventListener('click', () => { 
+    document.getElementById('notification-prompt-modal').style.display = 'none'; 
+});
