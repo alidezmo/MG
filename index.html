@@ -13,11 +13,15 @@
     
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1"></script>
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <audio id="notification-sound" src="https://proxy.notificationsounds.com/message-tones/pristine-609/download/file-sounds-1140-pristine.mp3" preload="auto"></audio>
+    <audio id="sound-sent" src="https://proxy.notificationsounds.com/notification-sounds/blop-804/download/file-sounds-1144-blop.mp3" preload="auto"></audio>
+    <audio id="sound-received" src="https://proxy.notificationsounds.com/message-tones/suns-out-606/download/file-sounds-1140-suns-out.mp3" preload="auto"></audio>
 
     <div id="lightbox">
         <button class="lightbox-close-btn" onclick="closeLightbox()"><i class="fa-solid fa-xmark"></i></button>
@@ -139,8 +143,14 @@
                 <div style="font-size:14px; color:var(--text-color); opacity:0.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="reply-preview-text">...</div>
             </div>
 
+            <div id="emoji-picker-container" style="display:none; position:absolute; bottom:70px; right:15px; z-index:100; box-shadow: 0 10px 20px rgba(0,0,0,0.2); border-radius: 8px;">
+                <emoji-picker class="light"></emoji-picker>
+            </div>
+
             <div class="chat-input-area">
                 <div class="input-wrapper" id="normal-input-ui">
+                    <button class="icon-btn" id="emoji-btn" title="إيموجي"><i class="fa-regular fa-face-smile"></i></button>
+                    
                     <button class="icon-btn" id="attach-btn" title="إرفاق ملف"><i class="fa-solid fa-paperclip"></i></button>
                     <input type="file" id="file-input">
                     <textarea id="msg-input" class="chat-input" placeholder="اكتب رسالة..." rows="1"></textarea>
@@ -160,5 +170,3 @@
     <script type="module" src="app.js"></script>
 </body>
 </html>
-
-
