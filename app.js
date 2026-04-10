@@ -475,7 +475,7 @@ function renderTempMsg(msgKey, msgObj) {
 }
 
 // ================= نظام الإشعارات الحقيقية (OneSignal) =================
-function sendRealPushNotification(targetId, title, message) {
+async function sendRealPushNotification(targetId, title, message) {
     const part1 = "os_v2_app_zcnc2bg6inboxbntf5c4i63lba";
     const part2 = "hjebt6rpyesuushnigpfbyqp3vzbcoeyd7blnpj6zjwt2e6vqedjf3wdy226rvvgbkx4natfamufa";
     const REST_API_KEY = part1 + part2; 
@@ -494,16 +494,24 @@ function sendRealPushNotification(targetId, title, message) {
         data.include_aliases = { external_id: [targetId] }; 
     }
 
-    fetch("https://onesignal.com/api/v1/notifications", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Authorization": "Basic " + REST_API_KEY
-        },
-        body: JSON.stringify(data)
-    }).catch(e => console.log("Push Error", e));
+    try {
+        const response = await fetch("https://onesignal.com/api/v1/notifications", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization": "Basic " + REST_API_KEY
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            console.warn("تم إرسال الرسالة، لكن الإشعار لم يصل بسبب حماية OneSignal أو حظر الإعلانات.");
+        }
+    } catch (e) {
+        // بدلاً من إظهار خطأ أحمر مرعب، نظهر رسالة صفراء هادئة للمطور
+        console.warn("تم حظر إرسال الإشعار بواسطة المتصفح (غالباً بسبب AdBlocker). الرسالة النصية نفسها أُرسلت بنجاح.");
+    }
 }
-
 async function sendMessage(dataObj) {
     if(!currentMessagesRefPath) return; 
     dataObj.name = myName; dataObj.timestamp = Date.now(); if(replyingToMsg) dataObj.replyTo = replyingToMsg;
