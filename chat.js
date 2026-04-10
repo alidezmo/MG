@@ -1,7 +1,8 @@
-import { db, ref, push, onValue, set, update, remove, query, limitToLast, onChildAdded, onChildRemoved, onChildChanged, CLOUDINARY_URL, CLOUDINARY_UPLOAD_PRESET } from './firebase-config.js';
+import { db, ref, push, onValue, set, update, remove, query, limitToLast, onChildAdded, onChildRemoved, onChildChanged, get, orderByKey, endBefore, CLOUDINARY_URL, CLOUDINARY_UPLOAD_PRESET } from './firebase-config.js';
 import { state } from './state.js';
 
-const chatMessages = document.getElementById('chat-messages'); const msgInput = document.getElementById('msg-input');
+const chatMessages = document.getElementById('chat-messages'); 
+const msgInput = document.getElementById('msg-input');
 
 function playNotificationSound() { const snd = document.getElementById('notification-sound'); if(snd) { snd.currentTime = 0; snd.play().catch(()=>{}); } }
 window.copyMsgText = function(text) { navigator.clipboard.writeText(text).then(() => { window.showInAppToast('النظام', 'تم نسخ النص بنجاح ✔️', 'global', 'system'); }).catch(()=>{}); };
@@ -21,11 +22,59 @@ window.handleIncomingNotification = function(msg, roomType, targetId) {
 
 window.listenForNotifications = function(roomRefPath, roomType, targetId) {
     if (state.trackedRooms.has(roomRefPath)) return; state.trackedRooms.add(roomRefPath);
-    onChildAdded(query(ref(db, roomRefPath), limitToLast(100)), snapshot => window.handleIncomingNotification(snapshot.val(), roomType, targetId));
+    onChildAdded(query(ref(db, roomRefPath), limitToLast(50)), snapshot => window.handleIncomingNotification(snapshot.val(), roomType, targetId));
 }
+
+// ================== نظام جلب الرسائل القديمة (Infinite Scroll) ==================
+async function loadMoreMessages() {
+    state.isLoadingMore = true;
+    const oldScrollHeight = chatMessages.scrollHeight; // نحفظ الارتفاع القديم
+
+    const loadingEl = document.createElement('div');
+    loadingEl.id = 'loading-more-msgs';
+    loadingEl.style.textAlign = 'center'; loadingEl.style.padding = '10px';
+    loadingEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="color:var(--primary-color); font-size:20px;"></i>';
+    chatMessages.prepend(loadingEl);
+
+    try {
+        const q = query(ref(db, state.currentMessagesRefPath), orderByKey(), endBefore(state.oldestMessageKey), limitToLast(50));
+        const snapshot = await get(q);
+
+        if (snapshot.exists()) {
+            const messages = [];
+            snapshot.forEach(child => { messages.push({ key: child.key, val: child.val() }); });
+            
+            // إضافة الرسائل للأعلى بترتيب عكسي لتظل مرتبة زمنياً
+            messages.reverse().forEach(msg => {
+                renderMsg(msg.key, msg.val, msg.val.name === state.myName, true);
+            });
+        } else {
+            state.allMessagesLoaded = true; // لا يوجد رسائل أقدم
+        }
+    } catch (err) { console.error("Error loading messages:", err); }
+
+    document.getElementById('loading-more-msgs')?.remove();
+    
+    // معادلة سحرية للحفاظ على مكان الشاشة بعد إضافة الرسائل الجديدة فوق
+    const newScrollHeight = chatMessages.scrollHeight;
+    chatMessages.scrollTop = newScrollHeight - oldScrollHeight;
+    state.isLoadingMore = false;
+}
+
+chatMessages.addEventListener('scroll', () => {
+    // إذا وصل المستخدم لقمة الشاشة، ولم يتم التحميل مسبقاً، ولم تنتهِ الرسائل
+    if (chatMessages.scrollTop === 0 && !state.isLoadingMore && !state.allMessagesLoaded && state.oldestMessageKey) {
+        loadMoreMessages();
+    }
+});
+// ==============================================================================
 
 window.switchChat = function(mode, title, targetId = null) {
     state.currentChatMode = mode; state.currentChatTargetId = targetId; window.cancelReply(); window.cancelAttachment();
+    
+    // تصفير متغيرات التحميل للغرفة الجديدة
+    state.oldestMessageKey = null; state.allMessagesLoaded = false; state.isLoadingMore = false;
+    
     const badgeId = mode === 'global' ? 'global' : targetId; state.unreadCounts[badgeId] = 0; if (document.getElementById(`badge-${badgeId}`)) document.getElementById(`badge-${badgeId}`).style.display = 'none';
     document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active-chat'));
     const activeBtn = mode === 'global' ? document.getElementById('chat-btn-global') : document.getElementById(`chat-btn-${targetId}`); if(activeBtn) activeBtn.classList.add('active-chat');
@@ -35,10 +84,12 @@ window.switchChat = function(mode, title, targetId = null) {
     state.currentListeners.forEach(unsub => unsub()); state.currentListeners = []; if(state.typingListener) { state.typingListener(); state.typingListener = null; } chatMessages.innerHTML = ''; 
     const roomID = mode === 'global' ? 'global' : (state.myUserId < targetId ? `${state.myUserId}_${targetId}` : `${targetId}_${state.myUserId}`);
     state.currentMessagesRefPath = mode === 'global' ? 'messages_global' : `messages_private/${roomID}`;
-    const refQuery = query(ref(db, state.currentMessagesRefPath), limitToLast(100));
+    
+    // جلب أول 50 رسالة فقط عند الدخول
+    const refQuery = query(ref(db, state.currentMessagesRefPath), limitToLast(50));
 
     state.currentListeners.push(onChildAdded(refQuery, (snapshot) => {
-        const msg = snapshot.val(); renderMsg(snapshot.key, msg, msg.name === state.myName);
+        const msg = snapshot.val(); renderMsg(snapshot.key, msg, msg.name === state.myName, false);
         if (msg.name !== state.myName && msg.timestamp > state.appStartTime) { const receiveSound = document.getElementById('sound-received'); if(receiveSound) { receiveSound.currentTime = 0; receiveSound.play().catch(()=>{}); } }
         if (msg.name !== state.myName && state.currentChatMode === 'private' && (!msg.readBy || !msg.readBy[state.myUserId])) {
             if (!document.hidden) update(ref(db, `${state.currentMessagesRefPath}/${snapshot.key}`), { [`readBy/${state.myUserId}`]: true }); else state.pendingUnreadMessages.push(`${state.currentMessagesRefPath}/${snapshot.key}`);
@@ -157,8 +208,15 @@ function processTextForLinks(text) {
     return formattedText;
 }
 
-function renderMsg(msgKey, msgObj, isMe) {
+// أضفنا مُعامل `isPrepend` لتحديد ما إذا كانت الرسالة قديمة يتم إضافتها للأعلى
+function renderMsg(msgKey, msgObj, isMe, isPrepend = false) {
     const existingDiv = document.getElementById('msg-' + msgKey); if (existingDiv) existingDiv.remove(); 
+    
+    // تحديث مفتاح "أقدم رسالة" لتشغيل التمرير اللانهائي
+    if (!state.oldestMessageKey || msgKey < state.oldestMessageKey) {
+        state.oldestMessageKey = msgKey;
+    }
+
     const div = document.createElement('div'); div.id = 'msg-' + msgKey; div.className = `msg-bubble ${isMe ? 'msg-me' : 'msg-other'}`;
     let htmlContent = '', textExcerptForReply = '', safeContentToCopy = ''; 
     let quoteHtml = ''; if(msgObj.replyTo) quoteHtml = `<div class="quoted-msg" onclick="window.scrollToMsg('${msgObj.replyTo.key}')"><strong>${msgObj.replyTo.name}</strong><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${msgObj.replyTo.text}</div></div>`;
@@ -186,7 +244,15 @@ function renderMsg(msgKey, msgObj, isMe) {
     const timeStr = msgObj.timestamp ? new Date(msgObj.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 
     div.innerHTML = `${actionsHtml}${reactMenuHtml}${!isMe ? `<span class="sender-name">${msgObj.name}</span>` : ''}${quoteHtml}<div>${htmlContent}</div><div class="msg-meta">${timeStr} ${readStatusHtml}</div><div class="reactions-display hidden" id="reactions-display-${msgKey}"></div>`;
-    chatMessages.appendChild(div); setTimeout(() => { chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' }); }, 150);
+    
+    // إذا كانت رسالة قديمة يتم إدراجها للأعلى
+    if (isPrepend) {
+        chatMessages.prepend(div);
+    } else {
+        chatMessages.appendChild(div); 
+        setTimeout(() => { chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' }); }, 150);
+    }
+
     if (msgObj.reactions) updateReactionsUI(msgKey, msgObj.reactions);
 
     let touchStartX = 0, touchStartY = 0, pressTimer, isSwiping = false;
