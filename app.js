@@ -15,8 +15,7 @@ if ('serviceWorker' in navigator) {
     .catch((err) => console.log("Service Worker Failed", err)); 
 }
     
-    
-    let deferredPrompt;
+let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault(); deferredPrompt = e;
     document.getElementById('install-app-btn').style.display = 'block'; 
@@ -38,16 +37,17 @@ window.startApp = function() {
     window.listenForNotifications('messages_global', 'global', 'global'); 
     window.switchChat('global', 'المجموعة العامة');
 
-    // 👇 هذا هو الجزء الناقص الذي يطلب الملف بعد أن يفتح الشات! 👇
+    // 👇 التعديل الجذري: نطلب الملف من الحارس بشكل مباشر وأكثر دقة 👇
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then((registration) => {
-            if (registration.active) {
-                // الآن نسأل الحارس: هل أحضرت معك ملفاً من الخارج؟
-                registration.active.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
-            }
-        });
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
+        } else {
+            navigator.serviceWorker.ready.then((reg) => {
+                if (reg.active) reg.active.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
+            });
+        }
     }
-    // 👆 نهاية الجزء الناقص 👆
+    // 👆 ========================================= 👆
 
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
@@ -67,6 +67,7 @@ window.startApp = function() {
         }
     });
 }
+
 function timeAgo(timestamp) {
     if (!timestamp) return 'غير متصل';
     const seconds = Math.floor((Date.now() - timestamp) / 1000);
@@ -80,7 +81,7 @@ function registerInFirebase() {
     onValue(ref(db, 'users'), snapshot => {
         const allUsers = snapshot.val() || {}; 
         
-        // 👇 هذا السطر الجديد ليحسب عدد كل مستخدمي التطبيق
+        // 👇 هذا السطر ليحسب عدد كل مستخدمي التطبيق
         state.totalUsers = Object.keys(allUsers).length; 
         
         const usersListEl = document.getElementById('online-users-list'); usersListEl.innerHTML = ''; 
@@ -99,7 +100,6 @@ function registerInFirebase() {
     });
 }
 
-
 // ================= أزرار التحكم في نافذة الإشعارات =================
 document.getElementById('allow-notif-btn').addEventListener('click', () => {
     document.getElementById('notification-prompt-modal').style.display = 'none';
@@ -115,10 +115,6 @@ document.getElementById('allow-notif-btn').addEventListener('click', () => {
 document.getElementById('deny-notif-btn').addEventListener('click', () => { 
     document.getElementById('notification-prompt-modal').style.display = 'none'; 
 });
-
-
-
-
 
 // مراقبة حالة الإنترنت
 window.addEventListener('online', () => {
