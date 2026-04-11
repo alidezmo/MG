@@ -7,7 +7,7 @@ const msgInput = document.getElementById('msg-input');
 // ================== ذاكرة الأصوات الذكية ==================
 window.playedNotifSounds = window.playedNotifSounds || new Set();
 window.playedReceiveSounds = window.playedReceiveSounds || new Set();
-window.knownReactions = window.knownReactions || {}; // ذاكرة لمعرفة هل تم إضافة تفاعل جديد أم لا
+window.knownReactions = window.knownReactions || {}; 
 
 function playNotificationSound() { const snd = document.getElementById('notification-sound'); if(snd) { snd.currentTime = 0; snd.play().catch(()=>{}); } }
 window.copyMsgText = function(text) { navigator.clipboard.writeText(text).then(() => { window.showInAppToast('النظام', 'تم نسخ النص بنجاح ✔️', 'global', 'system'); }).catch(()=>{}); };
@@ -84,7 +84,6 @@ chatMessages.addEventListener('scroll', () => {
 // ==============================================================================
 
 window.switchChat = function(mode, title, targetId = null) {
-    // 👇 الإصلاح هنا: إجبار targetId ليكون 'global' لتجنب خطأ عداد الإشعارات 👇
     if (mode === 'global') targetId = 'global'; 
     
     state.currentChatMode = mode; state.currentChatTargetId = targetId; window.cancelReply(); window.cancelAttachment();
@@ -108,15 +107,19 @@ window.switchChat = function(mode, title, targetId = null) {
         const msg = snapshot.val(); 
         const msgKey = snapshot.key;
         
-        // حفظ حالة التفاعلات في الذاكرة عند التحميل
         window.knownReactions[msgKey] = JSON.stringify(msg.reactions || {});
 
         renderMsg(msgKey, msg, msg.name === state.myName, false);
         
+        // 👇 الحل هنا: شرط مزدوج للربط بين الذاكرتين 👇
         if (msg.name !== state.myName && msg.timestamp > state.appStartTime && !window.playedReceiveSounds.has(msgKey)) { 
             window.playedReceiveSounds.add(msgKey);
-            const receiveSound = document.getElementById('sound-received'); 
-            if(receiveSound) { receiveSound.currentTime = 0; receiveSound.play().catch(()=>{}); } 
+            
+            // نشغل الصوت الهادئ فقط إذا لم نكن قد شغلنا الصوت العالي لهذه الرسالة!
+            if (!window.playedNotifSounds.has(msgKey)) {
+                const receiveSound = document.getElementById('sound-received'); 
+                if(receiveSound) { receiveSound.currentTime = 0; receiveSound.play().catch(()=>{}); } 
+            }
         }
 
         if (msg.name !== state.myName && (!msg.readBy || !msg.readBy[state.myUserId])) {
@@ -128,14 +131,13 @@ window.switchChat = function(mode, title, targetId = null) {
         const msg = snapshot.val(); 
         const msgKey = snapshot.key;
 
-        // 👇 السحر هنا: تشغيل الصوت إذا قام شخص بوضع رياكت جديد 👇
         const currentReactionsStr = JSON.stringify(msg.reactions || {});
         const prevReactionsStr = window.knownReactions[msgKey] || "{}";
 
         if (currentReactionsStr !== prevReactionsStr) {
-            window.knownReactions[msgKey] = currentReactionsStr; // تحديث الذاكرة
+            window.knownReactions[msgKey] = currentReactionsStr; 
             const receiveSound = document.getElementById('sound-received'); 
-            if(receiveSound) { receiveSound.currentTime = 0; receiveSound.play().catch(()=>{}); } // تشغيل الصوت للتفاعل
+            if(receiveSound) { receiveSound.currentTime = 0; receiveSound.play().catch(()=>{}); } 
         }
 
         const statusIcon = document.getElementById('status-' + snapshot.key); 
