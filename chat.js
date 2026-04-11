@@ -7,6 +7,7 @@ const msgInput = document.getElementById('msg-input');
 // ================== ذاكرة الأصوات الذكية ==================
 window.playedNotifSounds = window.playedNotifSounds || new Set();
 window.playedReceiveSounds = window.playedReceiveSounds || new Set();
+window.knownReactions = window.knownReactions || {}; // ذاكرة لمعرفة هل تم إضافة تفاعل جديد أم لا
 
 function playNotificationSound() { const snd = document.getElementById('notification-sound'); if(snd) { snd.currentTime = 0; snd.play().catch(()=>{}); } }
 window.copyMsgText = function(text) { navigator.clipboard.writeText(text).then(() => { window.showInAppToast('النظام', 'تم نسخ النص بنجاح ✔️', 'global', 'system'); }).catch(()=>{}); };
@@ -24,8 +25,11 @@ window.handleIncomingNotification = function(msgKey, msg, roomType, targetId) {
             playNotificationSound();
         }
 
-        const badgeId = roomType === 'global' ? 'global' : targetId; state.unreadCounts[badgeId] = (state.unreadCounts[badgeId] || 0) + 1;
-        const badgeEl = document.getElementById('badge-' + badgeId); if (badgeEl) { badgeEl.innerText = state.unreadCounts[badgeId]; badgeEl.style.display = 'flex'; }
+        const badgeId = roomType === 'global' ? 'global' : targetId; 
+        state.unreadCounts[badgeId] = (state.unreadCounts[badgeId] || 0) + 1;
+        const badgeEl = document.getElementById('badge-' + badgeId); 
+        if (badgeEl) { badgeEl.innerText = state.unreadCounts[badgeId]; badgeEl.style.display = 'flex'; }
+        
         let notifBody = msg.type === 'text' ? msg.content : (msg.type === 'audio' ? '🎤 أرسل رسالة صوتية' : '📁 أرسل ملفاً/صورة');
         if ('setAppBadge' in navigator) navigator.setAppBadge(Object.values(state.unreadCounts).reduce((a, b) => a + b, 0)).catch(()=>{});
         if (document.hidden && Notification.permission === "granted") { const notification = new Notification(roomType === 'global' ? `المجموعة العامة - ${msg.name}` : `رسالة من ${msg.name}`, { body: notifBody, icon: './icon.svg' }); notification.onclick = function() { window.focus(); this.close(); }; } 
@@ -41,7 +45,7 @@ window.listenForNotifications = function(roomRefPath, roomType, targetId) {
 // ================== نظام جلب الرسائل القديمة (Infinite Scroll) ==================
 async function loadMoreMessages() {
     state.isLoadingMore = true;
-    const oldScrollHeight = chatMessages.scrollHeight; // نحفظ الارتفاع القديم
+    const oldScrollHeight = chatMessages.scrollHeight;
 
     const loadingEl = document.createElement('div');
     loadingEl.id = 'loading-more-msgs';
@@ -57,25 +61,22 @@ async function loadMoreMessages() {
             const messages = [];
             snapshot.forEach(child => { messages.push({ key: child.key, val: child.val() }); });
             
-            // إضافة الرسائل للأعلى بترتيب عكسي لتظل مرتبة زمنياً
             messages.reverse().forEach(msg => {
                 renderMsg(msg.key, msg.val, msg.val.name === state.myName, true);
             });
         } else {
-            state.allMessagesLoaded = true; // لا يوجد رسائل أقدم
+            state.allMessagesLoaded = true; 
         }
     } catch (err) { console.error("Error loading messages:", err); }
 
     document.getElementById('loading-more-msgs')?.remove();
     
-    // معادلة سحرية للحفاظ على مكان الشاشة بعد إضافة الرسائل الجديدة فوق
     const newScrollHeight = chatMessages.scrollHeight;
     chatMessages.scrollTop = newScrollHeight - oldScrollHeight;
     state.isLoadingMore = false;
 }
 
 chatMessages.addEventListener('scroll', () => {
-    // إذا وصل المستخدم لقمة الشاشة، ولم يتم التحميل مسبقاً، ولم تنتهِ الرسائل
     if (chatMessages.scrollTop === 0 && !state.isLoadingMore && !state.allMessagesLoaded && state.oldestMessageKey) {
         loadMoreMessages();
     }
@@ -83,12 +84,15 @@ chatMessages.addEventListener('scroll', () => {
 // ==============================================================================
 
 window.switchChat = function(mode, title, targetId = null) {
+    // 👇 الإصلاح هنا: إجبار targetId ليكون 'global' لتجنب خطأ عداد الإشعارات 👇
+    if (mode === 'global') targetId = 'global'; 
+    
     state.currentChatMode = mode; state.currentChatTargetId = targetId; window.cancelReply(); window.cancelAttachment();
     
-    // تصفير متغيرات التحميل للغرفة الجديدة
     state.oldestMessageKey = null; state.allMessagesLoaded = false; state.isLoadingMore = false;
     
-    const badgeId = mode === 'global' ? 'global' : targetId; state.unreadCounts[badgeId] = 0; if (document.getElementById(`badge-${badgeId}`)) document.getElementById(`badge-${badgeId}`).style.display = 'none';
+    const badgeId = mode === 'global' ? 'global' : targetId; state.unreadCounts[badgeId] = 0; 
+    if (document.getElementById(`badge-${badgeId}`)) { document.getElementById(`badge-${badgeId}`).style.display = 'none'; document.getElementById(`badge-${badgeId}`).innerText = '0'; }
     document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active-chat'));
     const activeBtn = mode === 'global' ? document.getElementById('chat-btn-global') : document.getElementById(`chat-btn-${targetId}`); if(activeBtn) activeBtn.classList.add('active-chat');
     document.getElementById('chat-title').innerText = title; document.getElementById('header-icon').innerHTML = mode === 'global' ? '<i class="fa-solid fa-earth-americas"></i>' : title.charAt(0).toUpperCase(); document.getElementById('header-icon').style.background = mode === 'global' ? 'var(--primary-color)' : '#10b981';
@@ -98,15 +102,17 @@ window.switchChat = function(mode, title, targetId = null) {
     const roomID = mode === 'global' ? 'global' : (state.myUserId < targetId ? `${state.myUserId}_${targetId}` : `${targetId}_${state.myUserId}`);
     state.currentMessagesRefPath = mode === 'global' ? 'messages_global' : `messages_private/${roomID}`;
     
-    // جلب أول 50 رسالة فقط عند الدخول
     const refQuery = query(ref(db, state.currentMessagesRefPath), limitToLast(50));
 
     state.currentListeners.push(onChildAdded(refQuery, (snapshot) => {
         const msg = snapshot.val(); 
         const msgKey = snapshot.key;
+        
+        // حفظ حالة التفاعلات في الذاكرة عند التحميل
+        window.knownReactions[msgKey] = JSON.stringify(msg.reactions || {});
+
         renderMsg(msgKey, msg, msg.name === state.myName, false);
         
-        // --- السحر هنا: إذا كنا داخل المحادثة نشغل صوت الاستقبال الهادئ (مرة واحدة) ---
         if (msg.name !== state.myName && msg.timestamp > state.appStartTime && !window.playedReceiveSounds.has(msgKey)) { 
             window.playedReceiveSounds.add(msgKey);
             const receiveSound = document.getElementById('sound-received'); 
@@ -120,17 +126,27 @@ window.switchChat = function(mode, title, targetId = null) {
     
     state.currentListeners.push(onChildChanged(refQuery, (snapshot) => { 
         const msg = snapshot.val(); 
+        const msgKey = snapshot.key;
+
+        // 👇 السحر هنا: تشغيل الصوت إذا قام شخص بوضع رياكت جديد 👇
+        const currentReactionsStr = JSON.stringify(msg.reactions || {});
+        const prevReactionsStr = window.knownReactions[msgKey] || "{}";
+
+        if (currentReactionsStr !== prevReactionsStr) {
+            window.knownReactions[msgKey] = currentReactionsStr; // تحديث الذاكرة
+            const receiveSound = document.getElementById('sound-received'); 
+            if(receiveSound) { receiveSound.currentTime = 0; receiveSound.play().catch(()=>{}); } // تشغيل الصوت للتفاعل
+        }
+
         const statusIcon = document.getElementById('status-' + snapshot.key); 
         if (statusIcon) {
             let isFullyRead = false;
             if (state.currentChatMode === 'private') {
                 isFullyRead = msg.readBy ? true : false;
             } else {
-                // إذا كان الجروب العام، نتحقق هل عدد القراء يساوي كل الناس؟
                 const readCount = msg.readBy ? Object.keys(msg.readBy).length : 0;
                 isFullyRead = readCount > 0 && readCount >= (state.totalUsers - 1);
             }
-            // إذا قرأها الجميع (صحين أزرق)، وإلا (صح واحدة)
             statusIcon.className = isFullyRead ? "fa-solid fa-check-double status-read" : "fa-solid fa-check";
         }
         updateReactionsUI(snapshot.key, msg.reactions); 
@@ -304,7 +320,6 @@ document.getElementById('send-btn').addEventListener('click', () => {
         
         window.cancelReply(); window.cancelAttachment();
         
-        // تشغيل صوت الإرسال
         const sendSound = document.getElementById('sound-sent'); if(sendSound) { sendSound.currentTime = 0; sendSound.play().catch(()=>{}); }
         
         msgInput.value = ''; msgInput.style.height = 'auto'; msgInput.blur(); setTimeout(() => { chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' }); }, 200);
