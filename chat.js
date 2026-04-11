@@ -4,15 +4,28 @@ import { state } from './state.js';
 const chatMessages = document.getElementById('chat-messages'); 
 const msgInput = document.getElementById('msg-input');
 
+// ================== ذاكرة الأصوات الذكية ==================
+window.playedNotifSounds = window.playedNotifSounds || new Set();
+window.playedReceiveSounds = window.playedReceiveSounds || new Set();
+
 function playNotificationSound() { const snd = document.getElementById('notification-sound'); if(snd) { snd.currentTime = 0; snd.play().catch(()=>{}); } }
 window.copyMsgText = function(text) { navigator.clipboard.writeText(text).then(() => { window.showInAppToast('النظام', 'تم نسخ النص بنجاح ✔️', 'global', 'system'); }).catch(()=>{}); };
 
-window.handleIncomingNotification = function(msg, roomType, targetId) {
+window.handleIncomingNotification = function(msgKey, msg, roomType, targetId) {
     if (msg.timestamp < state.appStartTime || msg.name === state.myName) return; 
-    if (!(state.currentChatMode === roomType && state.currentChatTargetId === targetId)) {
+    
+    // التحقق: هل نحن خارج هذه المحادثة؟
+    const isOutsideChat = !(state.currentChatMode === roomType && state.currentChatTargetId === targetId);
+
+    if (isOutsideChat) {
+        // تشغيل صوت الإشعار العالي فقط إذا لم يسبق تشغيله لهذه الرسالة
+        if (!window.playedNotifSounds.has(msgKey)) {
+            window.playedNotifSounds.add(msgKey);
+            playNotificationSound();
+        }
+
         const badgeId = roomType === 'global' ? 'global' : targetId; state.unreadCounts[badgeId] = (state.unreadCounts[badgeId] || 0) + 1;
         const badgeEl = document.getElementById('badge-' + badgeId); if (badgeEl) { badgeEl.innerText = state.unreadCounts[badgeId]; badgeEl.style.display = 'flex'; }
-        playNotificationSound();
         let notifBody = msg.type === 'text' ? msg.content : (msg.type === 'audio' ? '🎤 أرسل رسالة صوتية' : '📁 أرسل ملفاً/صورة');
         if ('setAppBadge' in navigator) navigator.setAppBadge(Object.values(state.unreadCounts).reduce((a, b) => a + b, 0)).catch(()=>{});
         if (document.hidden && Notification.permission === "granted") { const notification = new Notification(roomType === 'global' ? `المجموعة العامة - ${msg.name}` : `رسالة من ${msg.name}`, { body: notifBody, icon: './icon.svg' }); notification.onclick = function() { window.focus(); this.close(); }; } 
@@ -22,7 +35,7 @@ window.handleIncomingNotification = function(msg, roomType, targetId) {
 
 window.listenForNotifications = function(roomRefPath, roomType, targetId) {
     if (state.trackedRooms.has(roomRefPath)) return; state.trackedRooms.add(roomRefPath);
-    onChildAdded(query(ref(db, roomRefPath), limitToLast(50)), snapshot => window.handleIncomingNotification(snapshot.val(), roomType, targetId));
+    onChildAdded(query(ref(db, roomRefPath), limitToLast(50)), snapshot => window.handleIncomingNotification(snapshot.key, snapshot.val(), roomType, targetId));
 }
 
 // ================== نظام جلب الرسائل القديمة (Infinite Scroll) ==================
@@ -89,13 +102,23 @@ window.switchChat = function(mode, title, targetId = null) {
     const refQuery = query(ref(db, state.currentMessagesRefPath), limitToLast(50));
 
     state.currentListeners.push(onChildAdded(refQuery, (snapshot) => {
-        const msg = snapshot.val(); renderMsg(snapshot.key, msg, msg.name === state.myName, false);
-        if (msg.name !== state.myName && msg.timestamp > state.appStartTime) { const receiveSound = document.getElementById('sound-received'); if(receiveSound) { receiveSound.currentTime = 0; receiveSound.play().catch(()=>{}); } }
+        const msg = snapshot.val(); 
+        const msgKey = snapshot.key;
+        renderMsg(msgKey, msg, msg.name === state.myName, false);
+        
+        // --- السحر هنا: إذا كنا داخل المحادثة نشغل صوت الاستقبال الهادئ (مرة واحدة) ---
+        if (msg.name !== state.myName && msg.timestamp > state.appStartTime && !window.playedReceiveSounds.has(msgKey)) { 
+            window.playedReceiveSounds.add(msgKey);
+            const receiveSound = document.getElementById('sound-received'); 
+            if(receiveSound) { receiveSound.currentTime = 0; receiveSound.play().catch(()=>{}); } 
+        }
+
         if (msg.name !== state.myName && (!msg.readBy || !msg.readBy[state.myUserId])) {
-            if (!document.hidden) update(ref(db, `${state.currentMessagesRefPath}/${snapshot.key}`), { [`readBy/${state.myUserId}`]: true }); else state.pendingUnreadMessages.push(`${state.currentMessagesRefPath}/${snapshot.key}`);
+            if (!document.hidden) update(ref(db, `${state.currentMessagesRefPath}/${msgKey}`), { [`readBy/${state.myUserId}`]: true }); else state.pendingUnreadMessages.push(`${state.currentMessagesRefPath}/${msgKey}`);
         }
     }));
-  state.currentListeners.push(onChildChanged(refQuery, (snapshot) => { 
+    
+    state.currentListeners.push(onChildChanged(refQuery, (snapshot) => { 
         const msg = snapshot.val(); 
         const statusIcon = document.getElementById('status-' + snapshot.key); 
         if (statusIcon) {
@@ -112,6 +135,7 @@ window.switchChat = function(mode, title, targetId = null) {
         }
         updateReactionsUI(snapshot.key, msg.reactions); 
     }));
+    
     state.currentListeners.push(onChildRemoved(refQuery, (snapshot) => { const el = document.getElementById('msg-' + snapshot.key); if(el) { el.style.animation = 'fadeIn 0.3s ease reverse'; setTimeout(() => el.remove(), 250); } }));
 
     state.typingListener = onValue(ref(db, `typing/${roomID}`), snapshot => {
@@ -183,7 +207,6 @@ async function sendRealPushNotification(targetId, title, message) {
     } catch (e) { console.warn("تم حظر إرسال الإشعار بواسطة المتصفح."); }
 }
 
-
 window.processOfflineQueue = async function() {
     if (state.offlineQueue.length === 0) return;
     
@@ -193,17 +216,12 @@ window.processOfflineQueue = async function() {
     state.offlineQueue = [];
 
     for (const msgData of queue) {
-        // التصحيح هنا: msgData.tempKey يحتوي بالفعل على كلمة "temp-"
         const tempEl = document.getElementById(msgData.tempKey);
-        
         if (tempEl) {
-            // إضافة تأثير اختفاء بسيط قبل الحذف
             tempEl.style.transition = 'opacity 0.3s ease';
             tempEl.style.opacity = '0';
             setTimeout(() => tempEl.remove(), 300);
         }
-
-        // إرسال الرسالة الحقيقية
         await window.sendMessage(msgData.data);
     }
 };
@@ -211,19 +229,14 @@ window.processOfflineQueue = async function() {
 window.sendMessage = async function(dataObj) {
     if(!state.currentMessagesRefPath) return; 
 
-    // --- 1. فحص حالة الإنترنت قبل أي شيء ---
     if (!navigator.onLine) {
         const tempKey = 'temp-' + Date.now();
-        // حفظ الرسالة في الطابور ليرسلها التطبيق لاحقاً
         state.offlineQueue.push({ tempKey: tempKey, data: dataObj });
-        
-        // عرض الرسالة فوراً للمستخدم بعلامة الساعة 🕒
         renderOfflineMsg(tempKey, dataObj);
         window.showInAppToast('تنبيه', 'لا يوجد إنترنت، سيتم الإرسال فور العودة 🕒', 'global', 'system');
         return;
     }
 
-    // --- 2. إذا وجد إنترنت، نكمل الإرسال الطبيعي كما في كودك ---
     dataObj.name = state.myName; 
     dataObj.timestamp = Date.now(); 
     if(state.replyingToMsg) dataObj.replyTo = state.replyingToMsg;
@@ -259,7 +272,6 @@ window.sendMessage = async function(dataObj) {
         await set(newRef, dataObj); 
     }
 
-    // --- 3. إنهاء العمليات الجانبية (إشعار الكتابة، الرد، الإشعارات) ---
     const roomID = state.currentChatMode === 'global' ? 'global' : (state.myUserId < state.currentChatTargetId ? `${state.myUserId}_${state.currentChatTargetId}` : `${state.currentChatTargetId}_${state.myUserId}`);
     set(ref(db, `typing/${roomID}/${state.myUserId}`), { name: state.myName, isTyping: false }); 
     window.cancelReply(); 
@@ -273,33 +285,28 @@ window.sendMessage = async function(dataObj) {
     msgInput.style.height = 'auto';
 };
 
-
 function renderOfflineMsg(tempKey, dataObj) {
     const div = document.createElement('div');
     div.id = tempKey;
-    div.className = `msg-bubble msg-me`; // تظهر كأنها مني
-    div.style.opacity = '0.6'; // نجعلها باهتة قليلاً كأنها لم تُرسل بعد
-    
+    div.className = `msg-bubble msg-me`; 
+    div.style.opacity = '0.6'; 
     let content = dataObj.type === 'text' ? dataObj.content : (dataObj.type === 'audio' ? '🎤 رسالة صوتية معلقة' : '📁 ملف معلق');
-    
-    div.innerHTML = `
-        <div>${content}</div>
-        <div class="msg-meta">في الانتظار... <i class="fa-regular fa-clock"></i></div>
-    `;
-    
+    div.innerHTML = `<div>${content}</div><div class="msg-meta">في الانتظار... <i class="fa-regular fa-clock"></i></div>`;
     document.getElementById('chat-messages').appendChild(div);
     document.getElementById('chat-messages').scrollTo({ top: document.getElementById('chat-messages').scrollHeight, behavior: 'smooth' });
 }
-
-
 
 document.getElementById('send-btn').addEventListener('click', () => { 
     const text = msgInput.value.trim(); 
     if(text || state.pendingAttachment) { 
         if (state.pendingAttachment) window.sendMessage({ type: 'file', fileName: state.pendingAttachment.fileName, content: state.pendingAttachment.content, rawFile: state.pendingAttachment.fileObj, caption: text });
         else window.sendMessage({ type: 'text', content: text }); 
+        
         window.cancelReply(); window.cancelAttachment();
+        
+        // تشغيل صوت الإرسال
         const sendSound = document.getElementById('sound-sent'); if(sendSound) { sendSound.currentTime = 0; sendSound.play().catch(()=>{}); }
+        
         msgInput.value = ''; msgInput.style.height = 'auto'; msgInput.blur(); setTimeout(() => { chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' }); }, 200);
     }
 });
@@ -314,14 +321,9 @@ function processTextForLinks(text) {
     return formattedText;
 }
 
-// أضفنا مُعامل `isPrepend` لتحديد ما إذا كانت الرسالة قديمة يتم إضافتها للأعلى
 function renderMsg(msgKey, msgObj, isMe, isPrepend = false) {
     const existingDiv = document.getElementById('msg-' + msgKey); if (existingDiv) existingDiv.remove(); 
-    
-    // تحديث مفتاح "أقدم رسالة" لتشغيل التمرير اللانهائي
-    if (!state.oldestMessageKey || msgKey < state.oldestMessageKey) {
-        state.oldestMessageKey = msgKey;
-    }
+    if (!state.oldestMessageKey || msgKey < state.oldestMessageKey) { state.oldestMessageKey = msgKey; }
 
     const div = document.createElement('div'); div.id = 'msg-' + msgKey; div.className = `msg-bubble ${isMe ? 'msg-me' : 'msg-other'}`;
     let htmlContent = '', textExcerptForReply = '', safeContentToCopy = ''; 
@@ -361,7 +363,6 @@ function renderMsg(msgKey, msgObj, isMe, isPrepend = false) {
 
     div.innerHTML = `${actionsHtml}${reactMenuHtml}${!isMe ? `<span class="sender-name">${msgObj.name}</span>` : ''}${quoteHtml}<div>${htmlContent}</div><div class="msg-meta">${timeStr} ${readStatusHtml}</div><div class="reactions-display hidden" id="reactions-display-${msgKey}"></div>`;
     
-    // إذا كانت رسالة قديمة يتم إدراجها للأعلى
     if (isPrepend) {
         chatMessages.prepend(div);
     } else {
@@ -396,7 +397,6 @@ window.showMsgInfo = async function(msgKey) {
         const users = usersSnap.val() || {};
         let html = '';
 
-        // قسم التفاعلات
         if (msg.reactions) {
             html += '<div style="font-weight:bold; margin-bottom:10px; color:var(--primary-color);">تفاعل معها:</div>';
             for (let uid in msg.reactions) {
@@ -405,7 +405,6 @@ window.showMsgInfo = async function(msgKey) {
             }
         }
 
-        // قسم القراءة
         html += '<div style="font-weight:bold; margin-top:15px; margin-bottom:10px; color:var(--primary-color);">قرأها:</div>';
         if (msg.readBy) {
             for (let uid in msg.readBy) {
