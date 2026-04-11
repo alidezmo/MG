@@ -10,13 +10,13 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js') 
     .then(reg => {
         console.log("Service Worker Registered!");
-        navigator.serviceWorker.ready.then((registration) => {
-            if (registration.active) registration.active.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
-        });
+        // مسحنا طلب الملف من هنا لكي لا نستعجله
     })
     .catch((err) => console.log("Service Worker Failed", err)); 
 }
-let deferredPrompt;
+    
+    
+    let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault(); deferredPrompt = e;
     document.getElementById('install-app-btn').style.display = 'block'; 
@@ -38,7 +38,18 @@ window.startApp = function() {
     window.listenForNotifications('messages_global', 'global', 'global'); 
     window.switchChat('global', 'المجموعة العامة');
 
-window.OneSignalDeferred = window.OneSignalDeferred || [];
+    // 👇 هذا هو الجزء الناقص الذي يطلب الملف بعد أن يفتح الشات! 👇
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then((registration) => {
+            if (registration.active) {
+                // الآن نسأل الحارس: هل أحضرت معك ملفاً من الخارج؟
+                registration.active.postMessage({ type: 'CHECK_FOR_SHARED_FILE' });
+            }
+        });
+    }
+    // 👆 نهاية الجزء الناقص 👆
+
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
         
         await OneSignal.init({ 
@@ -50,13 +61,12 @@ window.OneSignalDeferred = window.OneSignalDeferred || [];
         
         OneSignal.login(state.myUserId);
         
-        // 👇 الحل هنا: استخدام الأداة الأصلية للمتصفح (Notification.permission)
+        // استخدام الأداة الأصلية للمتصفح (Notification.permission)
         if ('Notification' in window && Notification.permission === "default") {
             document.getElementById('notification-prompt-modal').style.display = 'flex';
         }
     });
 }
-
 function timeAgo(timestamp) {
     if (!timestamp) return 'غير متصل';
     const seconds = Math.floor((Date.now() - timestamp) / 1000);
